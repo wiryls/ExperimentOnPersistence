@@ -206,9 +206,9 @@ In this design, the capacity of a built-in container is limited to some fixed nu
 
 In my initial design, the growth factor of a container such as string was 2. I found it wastes about 0.25n memory if there are n nodes, compared to some normal designs with a growth factor 1.5.
 
-Finally, I choose the [Fibonacci](src/module/persistence/persistence_fibonacci.hpp) series because of the ideal growth factor, golden ratio. The growth factor 1.618 keeps a balance of memory cost and time cost. And also it is realloc-friendly.
+Finally, I choose the Fibonacci series because of the ideal growth factor, golden ratio. The growth factor 1.618 keeps a balance of memory cost and time cost. And also it is realloc-friendly.
 
-Three functions (and three template structs) are provided for calculation:
+[Three functions](src/module/persistence/persistence_fibonacci.hpp#L159-L202) (and [three template structs](src/module/persistence/persistence_fibonacci.hpp#L204-L232)) are provided for calculation:
 
  - `index_type left (value_type y)`, get the index of the left Fibonacci number of y.
  - `index_type right(value_type y)`, get the index of the right Fibonacci number of y.
@@ -228,9 +228,9 @@ node.construct(pool);
 
 The `pool` must support allocate and deallocate `char_t` and `node_t<char_t>` type.
 
-There is a simple and specially [customized memory pool](src/module/persistence/persistence_pool.hpp) in my source code for test. The memory pool is optimized according to the Fibonacci series and based on `std::allocator`.
+There is a simple and specially [customized memory pool](src/module/persistence/persistence_pool.hpp#L126) in my source code for test. The memory pool is optimized according to the Fibonacci series and based on `std::allocator`.
 
-About the simple and [customized memory pool](src/module/persistence/persistence_pool.hpp), a picture is worth words:
+About the simple and [customized memory pool](src/module/persistence/persistence_pool.hpp#L126), a picture is worth words:
 
 ```
       +-----------+  +-----------------+  +-----------------+
@@ -342,7 +342,7 @@ Test
 
 ### Test Code Snippet
 
-From [persistence_ast_node.hpp](src/module/unittest/test_io.cpp#L25-26).
+From [test_io.cpp](src/module/unittest/test_io.cpp#L25-L26).
 
 ```C++
 {
@@ -350,6 +350,9 @@ From [persistence_ast_node.hpp](src/module/unittest/test_io.cpp#L25-26).
     fs.release();	
 }
 ```
+
+Note:
+ - The test file is `citylots.json` (189.9 MB, contains tens of millions of nodes). Please see references[3].
 
 ### Result
 
@@ -369,13 +372,13 @@ Node Type | Memory Pool | Condition | Time(s) | Memory(MB)
 Note:
  - Time measure and memory footprint measure are provided by Visual Studio 2017.
  - Each test ran for three times and took its mean.
- - The test file is `citylots.json` (189.9 MB). Please see references [2].
  - `null` has been replaced with 0.
  - Customized Memory Pool is mentioned above and based on `std::allocator`.
  - About `CvFileNode`, OpenCV version is 3.3.
 
 Reference
 ===
+ 1. Modern C++ Design
  1. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
  1. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
  1. [RapidJSON Documentation](http://rapidjson.org/)
