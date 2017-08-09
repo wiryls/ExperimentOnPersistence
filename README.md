@@ -59,7 +59,8 @@ private:
 The idea is simple:
 
  - **Lower memory cost**:
-    - Use `union` to keep `sizeof(node_t<char_t>) == 16`. SSE friendly.
+    - Use top level `union` and,
+    - Compress `capacity` to keep `sizeof(node_t<char_t>) == 16`. (SSE friendly!)
  - **Lower coupling**:
     - Use generic programming to reduce code and bugs.
     - It's easy to add a new built-in type.
@@ -82,13 +83,15 @@ struct node_t
 };
 ```
 
-Once we choose this solution, in x64, it is hard to keep the size of node smaller than 16bytes. In `union data_t` part, a pointer will be 8 bytes, so containers such as `string` with pointer, size, and capacity will cost more than 16 bytes easily. `sizeof(node_t)` may be more than 24 bytes due to memory alignment.
+Once we choose this solution, in x64, it is hard to keep the size of node smaller than 16 bytes. In `union data_t` part, a pointer will be 8 bytes, so containers such as `string` with pointer, size, and capacity will cost more than 16 bytes easily. `sizeof(node_t)` may be more than 24 bytes due to memory alignment.
 
 So how to keep `sizeof(node) == 16`?
 
-After reading relevant materials and learning from others, I come up with an interesting new idea: compress "capacity" and use a top level union.
+After reading relevant materials and learning from others, I come up with an interesting new idea:
+ - Use a top level union and,
+ - Compress "capacity".
 
-Take the sequence type as an example:
+Let's take the sequence type as an example:
 
 **Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L960-L971))
 
@@ -101,7 +104,7 @@ struct layout
         uint64_t                    pad;
     }        raw;
     uint32_t siz;                        /* size */
-    uint8_t  exp;                        /* capacity */
+    uint8_t  exp;                        /* index */
     uint8_t  pad[2];
     uint8_t  tag;                        /* node type */
 };
@@ -113,14 +116,15 @@ struct layout
 +---------------------------------------------------------------+
 |                            pointer                            |
 +---------------------------------------------------------------+
-|               size            | index |               |  type |
+|               size            | index |               |  tag  |
 +---------------------------------------------------------------+
 ```
 
  - The pointer field is forced to be 8 bytes.
  - The size of a sequence is limited to 4 bytes. It costs 64 GB memory if full. It's enough in most cases.
  - The capacity of a sequence is compressed to be 1 byte. It only stores an index. The actual capacity is the n-th number in the Fibonacci series.
- - The node type is fixed at the last byte of a node whatever type. In this way, we can use `nil.tag` to access node type.
+ - The tag is fixed at the last byte of all nodes whatever type. In this way, we can use `nil.tag` to access node tag.
+ - We can make sure struct members won't rearrange. As it is standard layout.
 
 ### Generic Programming
 
