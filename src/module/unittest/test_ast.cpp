@@ -81,7 +81,7 @@ TEST(ast, seq)
     node_t<char> tmp;
     node_t<char> node;
     node.construct<SEQ>(pool);
-    
+
     {   /* push back */
 
         tmp.construct<DBL>(pool);
@@ -221,7 +221,7 @@ TEST(ast, map)
         pair[0].destruct(pool);
         pair[1].destruct(pool);
     }
-    {   
+    {
         /* make key */
         node_t<char> num;
         num.construct<DBL>(pool);

@@ -346,7 +346,7 @@ Test
 
 ### Test Code Snippet
 
-From [test_io.cpp](src/module/unittest/test_io.cpp#L25-L26).
+From [test_io.cpp](src/module/unittest/test_io.cpp#L26-L27).
 
 ```C++
 {
