@@ -7,7 +7,9 @@ The following will be covered:
 - Associated parts.
 - Performance.
 
-node_t
+Related code: [persistence](src\module\persistence).
+
+[node_t](src\module\persistence\persistence_ast_node.hpp)
 ===
 
 The basic part of an abstract syntax tree.
@@ -27,9 +29,11 @@ The new design:
 Design
 ---
 
+###Overview
+
 An overview of underlying union `node_t`.
 
-###Source Code Snippet
+**Source Code Snippet** (from [persistence_ast_node.hpp](src\module\persistence\persistence_ast_node.hpp))
 
 ```
 template<typename char_t> union node_t
@@ -54,12 +58,12 @@ private:
 
 The idea is simple:
 
- - Low memory cost:
+ - **Lower memory cost**:
     - Use `union` to keep `sizeof(node_t<char_t>) == 16`. SSE friendly.
- - Low coupling:
+ - **Lower coupling**:
     - Use generic programming to reduce code and bugs.
     - It's easy to add a new built-in type.
- - Good compatibility:
+ - **Good compatibility**:
     - Keep `node_t` trivial and standard layout.
     - Reserve a template parameter `pool_t` for a memory pool.
 
@@ -85,7 +89,8 @@ After reading relevant materials and learning from others, I come up with an int
 
 Take the sequence type as an example:
 
-**Source code snippet**:
+**Source Code Snippet** (from [persistence_ast_node.hpp](src\module\persistence\persistence_ast_node.hpp))
+
 ```
 struct layout
 {
@@ -102,7 +107,7 @@ struct layout
 
 ```
 
-**Memory layout digram**:
+**Memory Layout Digram**:
 ```
 +---------------------------------------------------------------+
 |                            pointer                            |
@@ -143,7 +148,8 @@ Details
 
 As short strings appear in data exchange format quite often. It is worth to add short string optimization. Also because the size of a node is fixed to 16 bytes, it is easier to optimize.
 
-**Source code snippet**:
+**Source Code Snippet** (from [persistence_ast_node.hpp](src\module\persistence\persistence_ast_node.hpp))
+
 ```
 union layout
 {
@@ -174,7 +180,7 @@ union layout
 };
 ```
 
-**Memory layout digram**:
+**Memory Layout Digram**:
 
 ```
 +---------------------------------------------------------------+
@@ -199,7 +205,7 @@ In this design, the capacity of a built-in container is limited to some fixed nu
 
 In my initial design, the growth factor of a container such as string was 2. I found it wastes about 0.25n memory if there are n nodes, compared to some normal designs with a growth factor 1.5.
 
-Finally, I choose the Fibonacci series because of the ideal growth factor, golden ratio. The growth factor 1.618 keeps a balance of memory cost and time cost. And also it is realloc-friendly.
+Finally, I choose the [Fibonacci](src\module\persistence\persistence_fibonacci.hpp) series because of the ideal growth factor, golden ratio. The growth factor 1.618 keeps a balance of memory cost and time cost. And also it is realloc-friendly.
 
 Three functions (and three template structs) are provided for calculation:
 
@@ -215,9 +221,9 @@ Most methods of `node_t` have a template parameter `pool_t` for a memory pool. I
 
 The `pool` must support allocate and deallocate `char_t` and `node_t<char_t>` type.
 
-There is a simple and specially customized memory pool in my source code for test. The memory pool is optimized according to the Fibonacci series and based on `std::allocator`.
+There is a simple and specially [customized memory pool](src\module\persistence\persistence_pool.hpp) in my source code for test. The memory pool is optimized according to the Fibonacci series and based on `std::allocator`.
 
-About the simple and customized memory pool, a picture is worth words:
+About the simple and [customized memory pool](src\module\persistence\persistence_pool.hpp), a picture is worth words:
 
 ```
       +-----------+  +-----------------+  +-----------------+
@@ -329,6 +335,8 @@ Test
 
 ###Test Code Snippet
 
+From [persistence_ast_node.hpp](src\module\unittest\test_io.cpp).
+
 ```
 {
 	FileStorage fs("citylots.json", FileStorage::READ);
@@ -354,11 +362,10 @@ Node Type | Memory Pool | Condition | Time(s) | Memory(MB)
 Note:
  - Time measure and memory footprint measure are provided by Visual Studio 2017.
  - Each test ran for three times and took its mean.
- - The test file is `citylots.json` (189.9 MB). Please see references.
+ - The test file is `citylots.json` (189.9 MB). Please see references [2].
  - `null` has been replaced with 0.
  - Customized Memory Pool is mentioned above and based on `std::allocator`.
  - About `CvFileNode`, OpenCV version is 3.3.
- - Sorry, I failed to build OpenCV x64. But it may cost double memory in theory.
 
 Reference
 ===

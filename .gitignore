@@ -6,6 +6,8 @@
 bin/
 trash/
 **/external/include/gtest
+**/module/gtest/gtest
+**/module/gtest/src
 **/module/gtest/*.cc
 citylots.json
 
