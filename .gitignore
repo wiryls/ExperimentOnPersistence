@@ -1,3 +1,14 @@
+# =========================
+# About this project
+# =========================
+
+.vs
+bin/
+trash/
+**/external/include/gtest
+**/module/gtest/*.cc
+citylots.json
+
 # Compiled Object files
 *.slo
 *.lo

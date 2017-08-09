@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)bin\$(Configuration).$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)trash\$(ProjectName)\$(Configuration).$(Platform)\</IntDir>
+    <IncludePath>$(SolutionDir)external\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)external\lib;$(LibraryPath)</LibraryPath>
+    <LocalDebuggerWorkingDirectory>$(SolutionDir)res</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
+  <ItemGroup />
+</Project>
