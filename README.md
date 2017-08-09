@@ -1,41 +1,41 @@
 Introduction
 ===
-This page is about a new design of the **node** in an abstract syntax tree of some data exchange format.
+This page is about a new design of the **node** in an abstract syntax tree of some **data exchange format**.
 
 The following will be covered:
 - Node in details.
 - Associated parts.
 - Performance.
 
-Related code: [persistence](src\module\persistence).
+Related code: [persistence](src/module/persistence).
 
-[node_t](src\module\persistence\persistence_ast_node.hpp)
+[node_t](src/module/persistence/persistence_ast_node.hpp)
 ===
 
-The basic part of an abstract syntax tree.
+The node is a basic and important part of an abstract syntax tree. And here, this new design only aims at some data interchange format.
 
 Features
 ---
 
 The new design:
 
- - keep always 16 bytes in x86 and x64,
- - is trivial and standard layout (plain old data),
- - support type: null, int64, double, (w)string, sequence, map,
- - have short string optimization,
- - set growth factor of built-in containers to the golden ratio,
+ - keep always 16 bytes in x86 and x64;
+ - is trivial and standard layout (plain old data);
+ - support type: null, int64, double, (w)string, sequence, and map;
+ - have short string optimization;
+ - set growth factor of built-in containers to the golden ratio;
  - require memory pool.
 
 Design
 ---
 
-###Overview
+### Overview
 
 An overview of underlying union `node_t`.
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src\module\persistence\persistence_ast_node.hpp))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp))
 
-```
+```C++
 template<typename char_t> union node_t
 {
 public:
@@ -67,10 +67,11 @@ The idea is simple:
     - Keep `node_t` trivial and standard layout.
     - Reserve a template parameter `pool_t` for a memory pool.
 
-###Memory layout
+### Memory layout
 
 A common union-style AST node is like:
-```
+
+```C++
 struct node_t
 {
     int flag_;
@@ -89,9 +90,9 @@ After reading relevant materials and learning from others, I come up with an int
 
 Take the sequence type as an example:
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src\module\persistence\persistence_ast_node.hpp))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp))
 
-```
+```C++
 struct layout
 {
     union
@@ -121,7 +122,7 @@ struct layout
  - The capacity of a sequence is compressed to be 1 byte. It only stores an index. The actual capacity is the n-th number in the Fibonacci series.
  - The node type is fixed at the last byte of a node whatever type. In this way, we can use `nil.tag` to access node type.
 
-###Generic Programming
+### Generic Programming
 
 With the help of traits paradigm, life is easier.
 
@@ -133,7 +134,7 @@ All built-in type is created in the following way:
  4. Add new methods to `node_t` if necessary. 
 
 Mostly, methods of `node_t` take the advantage of SFINAE. For example:
-```
+```C++
 template<tag_t TAG> inline
 typename traits<node_t, TAG>::size_type
 capacity() const;
@@ -144,13 +145,13 @@ We must firstly define `size_type` in `traits` to call method `capacity<TAG>()` 
 Details
 ---
 
-###Short String Optimization
+### Short String Optimization
 
 As short strings appear in data exchange format quite often. It is worth to add short string optimization. Also because the size of a node is fixed to 16 bytes, it is easier to optimize.
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src\module\persistence\persistence_ast_node.hpp))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp))
 
-```
+```C++
 union layout
 {
     /* short string */
@@ -199,13 +200,13 @@ union layout
 
 As mentioned above, `uint8_t tag` is fixed at the last byte of a node. The rest part is used to store necessary data of a string. If it is `node_t<char>` ( or`node_t<char16_t>`), all string less than 13 (or 6) characters will be stored as a short string. If not, `str.sht.ext.siz` will be set to 0xFF and it means NOT a short string.
 
-###Growth Factor of Built-in Containers
+### Growth Factor of Built-in Containers
 
 In this design, the capacity of a built-in container is limited to some fixed number. And only the index of a number in series is stored. So it is necessary to pre-compute the series and provide some methods to look up.
 
 In my initial design, the growth factor of a container such as string was 2. I found it wastes about 0.25n memory if there are n nodes, compared to some normal designs with a growth factor 1.5.
 
-Finally, I choose the [Fibonacci](src\module\persistence\persistence_fibonacci.hpp) series because of the ideal growth factor, golden ratio. The growth factor 1.618 keeps a balance of memory cost and time cost. And also it is realloc-friendly.
+Finally, I choose the [Fibonacci](src/module/persistence/persistence_fibonacci.hpp) series because of the ideal growth factor, golden ratio. The growth factor 1.618 keeps a balance of memory cost and time cost. And also it is realloc-friendly.
 
 Three functions (and three template structs) are provided for calculation:
 
@@ -215,15 +216,15 @@ Three functions (and three template structs) are provided for calculation:
 
 We can customize it to control the growth factor of built-in containers.
 
-###Memory Pool Requirement
+### Memory Pool Requirement
 
 Most methods of `node_t` have a template parameter `pool_t` for a memory pool. It is not a good idea but still needed. With this template parameter, we can wrap up something like `CvMemStorage` to maintain compatibility.
 
 The `pool` must support allocate and deallocate `char_t` and `node_t<char_t>` type.
 
-There is a simple and specially [customized memory pool](src\module\persistence\persistence_pool.hpp) in my source code for test. The memory pool is optimized according to the Fibonacci series and based on `std::allocator`.
+There is a simple and specially [customized memory pool](src/module/persistence/persistence_pool.hpp) in my source code for test. The memory pool is optimized according to the Fibonacci series and based on `std::allocator`.
 
-About the simple and [customized memory pool](src\module\persistence\persistence_pool.hpp), a picture is worth words:
+About the simple and [customized memory pool](src/module/persistence/persistence_pool.hpp), a picture is worth words:
 
 ```
       +-----------+  +-----------------+  +-----------------+
@@ -267,7 +268,7 @@ Usage
 ---
 
 Here a simple example shows what `node_t` looks like.
-```
+```C++
 pool_t       pool;
 node_t<char> node;
 node.construct(pool);
@@ -299,7 +300,7 @@ node.destruct(pool);
 Obviously, the interface looks unfriendly. Because it is designed to be low-level and plain old data, there are no constructors, destructor, and operators. Because it needs compatibility for some stateful memory pool, there is always a template parameter for the pool. They make the interface quite unfriendly.
 
 Generally speaking, we still need a high-level interface to wrap it up. For example:
-```
+```C++
 class FileNode
 {
 public:
@@ -333,26 +334,26 @@ Environment
 Test
 ---
 
-###Test Code Snippet
+### Test Code Snippet
 
-From [persistence_ast_node.hpp](src\module\unittest\test_io.cpp).
+From [persistence_ast_node.hpp](src/module/unittest/test_io.cpp).
 
-```
+```C++
 {
 	FileStorage fs("citylots.json", FileStorage::READ);
 	fs.release();	
 }
 ```
 
-###Result
+### Result
 
 Node Type | Memory Pool | Condition | Time(s) | Memory(MB)
 :--------:|:-----------:|:---------:|--------:|----------:
-`node_t<char>`| Customized Memory Pool | Debug x86 | 90 | 431
-`node_t<char>`| `std::allocator`       | Debug x86 | 92 | 525
-`CvFileNode`  | `CvMemStorage`         | Debug x86 | 45 | 1017
-`node_t<char>`| Customized Memory Pool | Debug x64 | 85 | 431
-`node_t<char>`| `std::allocator`       | Debug x64 | 86 | 586
+`node_t<char>`| Customized Memory Pool | Debug x86   | 90   | 431
+`node_t<char>`| `std::allocator`       | Debug x86   | 92   | 525
+`CvFileNode`  | `CvMemStorage`         | Debug x86   | 45   | 1017
+`node_t<char>`| Customized Memory Pool | Debug x64   | 85   | 431
+`node_t<char>`| `std::allocator`       | Debug x64   | 86   | 586
 `node_t<char>`| Customized Memory Pool | Release x86 | 4.72 | 372
 `node_t<char>`| `std::allocator`       | Release x86 | 5.76 | 363
 `CvFileNode`  | `CvMemStorage`         | Release x86 | 6.48 | 1011
@@ -371,3 +372,4 @@ Reference
 ===
  1. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
  1. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
+ 1. [RapidJSON Documentation](http://rapidjson.org/)
