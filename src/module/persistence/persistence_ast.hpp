@@ -30,7 +30,7 @@ namespace ast
         //cv::allocator
     > pool_t;
 
-	static inline const char * to_string(tag_t tag)
+    static inline const char * to_string(tag_t tag)
     {
         switch (tag)
         {

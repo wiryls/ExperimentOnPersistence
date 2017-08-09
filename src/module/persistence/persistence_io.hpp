@@ -13,7 +13,7 @@ CV_FS_PRIVATE_BEGIN
 namespace io
 {
     class stream_t;
-	typedef chars::buffer_t<char, 1024, std::allocator> buffer_t;
+    typedef chars::buffer_t<char, 1024, std::allocator> buffer_t;
 }
 
 namespace io

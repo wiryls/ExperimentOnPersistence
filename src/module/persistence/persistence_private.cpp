@@ -15,21 +15,21 @@ namespace exception
     /************************************************************************
      * TODO: replace it
      ***********************************************************************/
-	void error(int code, char const * err, POS_TYPE_)
-	{
-		char buf[1024];
+    void error(int code, char const * err, POS_TYPE_)
+    {
+        char buf[1024];
         ::sprintf(
-			buf,
-			"Error: code=%d (%s)\n\nin:\n func: %s,\n file: %s,\n line: %d.",
+            buf,
+            "Error: code=%d (%s)\n\nin:\n func: %s,\n file: %s,\n line: %d.",
             code,
-			(err  ? err  : "unknown"),
-			(func ? func : "unknown function"),
-			file,
-			line
-		);
+            (err  ? err  : "unknown"),
+            (func ? func : "unknown function"),
+            file,
+            line
+        );
         ::fprintf(stderr, "%s\n", buf);
         ::fflush(stderr);
-		::std::terminate();
-	}
+        ::std::terminate();
+    }
 }
 CV_FS_PRIVATE_END

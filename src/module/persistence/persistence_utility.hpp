@@ -199,7 +199,8 @@ namespace utility { namespace tl
     private:
         template<typename Iter>
         struct impl;
-    
+
+
         template<typename Type, typename Next>
         struct impl< iter<Type, Next> >
         {
@@ -235,7 +236,8 @@ namespace utility { namespace tl
             iter<T00,
             iter<T01, iter<T02, iter<T03, iter<T04, iter<T05, iter<T06,
             iter<T07, iter<T08, iter<T09, iter<T10, iter<T11, iter<T12,
-            end > > > > > > > > > > > > > >::type 
+            end > > > > > > > > > > > > > >::type
+
             type;
     };
 } }

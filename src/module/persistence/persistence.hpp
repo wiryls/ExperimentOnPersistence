@@ -100,7 +100,7 @@ namespace experimental
 
         void test_dump() const;
 
-	public:
+    public:
         void write(int val);
         void write(double val);
         void write(const char * val, size_t len = 0);
@@ -114,14 +114,14 @@ namespace experimental
         Impl* impl;
     };
 
-	template<typename T> static inline
-	FileStorage & operator << (FileStorage& fs, T const & value)
-	{
-		if (fs.isOpen() == false)
-			return fs;
-		fs.write(value);
-		return fs;
-	}
+    template<typename T> static inline
+    FileStorage & operator << (FileStorage& fs, T const & value)
+    {
+        if (fs.isOpen() == false)
+            return fs;
+        fs.write(value);
+        return fs;
+    }
 
 }
 

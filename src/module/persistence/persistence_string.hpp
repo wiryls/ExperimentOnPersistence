@@ -338,7 +338,7 @@ namespace chars
         explicit buffer_t(size_t siz, bool is_reserved = false);
         explicit buffer_t(size_t siz, bool is_reserved, allocator_t & alloc);
 
-		buffer_t             (buffer_t const & rhs);
+        buffer_t             (buffer_t const & rhs);
         buffer_t & operator= (buffer_t const & rhs);
 
         inline operator       pointer ();
@@ -354,15 +354,15 @@ namespace chars
         inline void     resize(size_t size);
         inline void    reserve(size_t size);
 
-		inline const_pointer begin() const;
-		inline const_pointer   end() const;
-		inline pointer begin();
-		inline pointer   end();
+        inline const_pointer begin() const;
+        inline const_pointer   end() const;
+        inline pointer begin();
+        inline pointer   end();
 
         inline const_reference  back() const;
-		inline const_reference front() const;
-		inline reference  back();
-		inline reference front();
+        inline const_reference front() const;
+        inline reference  back();
+        inline reference front();
 
         inline bool      empty() const;
         inline size_t     size() const;
@@ -488,11 +488,11 @@ namespace chars
     inline void buffer_t<T, N, Alloc_T>::
         push_back(const_pointer mem, size_t siz)
     {
-		if (mem == NULL)
-			return;
+        if (mem == NULL)
+            return;
 
         size_t new_siz_ = siz_ + siz;
-		reserve(new_siz_);
+        reserve(new_siz_);
 
         ::memcpy(ptr_ + siz_, mem, siz * sizeof(value_type));
         siz_ = new_siz_;
@@ -601,71 +601,71 @@ namespace chars
 
     template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::const_pointer
-	buffer_t<T, N, Alloc_T>::
-		begin() const
-	{
-		return ptr_;
-	}
+    buffer_t<T, N, Alloc_T>::
+        begin() const
+    {
+        return ptr_;
+    }
 
     template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::const_pointer
-	buffer_t<T, N, Alloc_T>::
-		end() const
-	{
-		return ptr_ + siz_;
-	}
+    buffer_t<T, N, Alloc_T>::
+        end() const
+    {
+        return ptr_ + siz_;
+    }
 
     template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::pointer
-	buffer_t<T, N, Alloc_T>::
-		begin()
-	{
-		return const_cast<pointer>
+    buffer_t<T, N, Alloc_T>::
+        begin()
+    {
+        return const_cast<pointer>
             (static_cast<buffer_t const &>(*this).begin());
-	}
+    }
 
     template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::pointer
-	buffer_t<T, N, Alloc_T>::
-		end()
-	{
-		return const_cast<pointer>
+    buffer_t<T, N, Alloc_T>::
+        end()
+    {
+        return const_cast<pointer>
             (static_cast<buffer_t const &>(*this).end());
-	}
+    }
 
     template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::const_reference
-	buffer_t<T, N, Alloc_T>::
-		back() const
-	{
-		return ptr_[siz_ - size_t(1)];
-	}
+    buffer_t<T, N, Alloc_T>::
+        back() const
+    {
+        return ptr_[siz_ - size_t(1)];
+    }
 
-	template<typename T, size_t N, template<typename> class Alloc_T>
+    template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::const_reference
-	buffer_t<T, N, Alloc_T>::
-		front() const
-	{
-		return *ptr_;
-	}
+    buffer_t<T, N, Alloc_T>::
+        front() const
+    {
+        return *ptr_;
+    }
 
     template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::reference
-	buffer_t<T, N, Alloc_T>::
-		back()
-	{
-		return const_cast<reference>
+    buffer_t<T, N, Alloc_T>::
+        back()
+    {
+        return const_cast<reference>
             (static_cast<buffer_t const &>(*this).back());
-	}
+    }
 
-	template<typename T, size_t N, template<typename> class Alloc_T>
+    template<typename T, size_t N, template<typename> class Alloc_T>
     inline typename buffer_t<T, N, Alloc_T>::reference
-	buffer_t<T, N, Alloc_T>::
-		front()
-	{
-		return const_cast<reference>
+    buffer_t<T, N, Alloc_T>::
+        front()
+    {
+        return const_cast<reference>
             (static_cast<buffer_t const &>(*this).front());
-	}
+    }
 
     template<typename T, size_t N, template<typename> class Alloc_T>
     inline bool buffer_t<T, N, Alloc_T>::

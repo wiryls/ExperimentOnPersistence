@@ -23,7 +23,7 @@ namespace exception
 
     inline static void file_too_large(long long size, POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char>()
                 * "file `"
                 | fmt<32>(size)
@@ -120,7 +120,7 @@ namespace io
             if (uint64_t(count)>uint64_t(std::numeric_limits<size_t>::max()))
                 exception::file_too_large(count, POS_);
 
-			buffer_t buffer(static_cast<size_t>(count));
+            buffer_t buffer(static_cast<size_t>(count));
             write(buffer, static_cast<size_type>(count));
             seek(backup, BEG);
             return buffer;
@@ -225,7 +225,7 @@ namespace io
             if (uint64_t(count)>uint64_t(std::numeric_limits<size_t>::max()))
                 exception::file_too_large(count, POS_);
 
-			buffer_t buffer(static_cast<size_t>(count));
+            buffer_t buffer(static_cast<size_t>(count));
             write(buffer, static_cast<size_type>(count));
             seek(backup, BEG);
             return buffer;

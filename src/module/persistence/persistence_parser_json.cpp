@@ -178,7 +178,7 @@ namespace parser { namespace json
         map_beg()
     {
         using namespace ast;
-		node_t & top = *nstack_.back();
+        node_t & top = *nstack_.back();
         top.template construct<MAP>(tree_.pool());
     }
 
@@ -210,7 +210,7 @@ namespace parser { namespace json
     template<typename char_t> inline void builder_t<char_t>::
         map_end()
     {
-		nstack_.pop_back();
+        nstack_.pop_back();
     }
 
     template<typename char_t> inline void builder_t<char_t>::
@@ -239,7 +239,7 @@ namespace parser { namespace json
     template<typename char_t> inline void builder_t<char_t>::
         seq_end()
     {
-		nstack_.pop_back();
+        nstack_.pop_back();
     }
 
     template<typename char_t> inline void builder_t<char_t>::
@@ -255,7 +255,7 @@ namespace parser { namespace json
         node_t & top = *nstack_.back();
         top.template set<STR>(buffer_.begin(), buffer_.end(),tree_.pool());
         buffer_.clear();
-		nstack_.pop_back();
+        nstack_.pop_back();
     }
 
     template<typename char_t> inline void builder_t<char_t>::

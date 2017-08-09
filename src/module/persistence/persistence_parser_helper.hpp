@@ -42,7 +42,7 @@ namespace exception
         const char * str,
         POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char, 256>()
                 * "buffer size `"
                 | fmt<32>(buf_len)
@@ -191,7 +191,7 @@ namespace parser
         size_t     position;
 
         size_t     warning_counter;
-		settings_t settings;
+        settings_t settings;
     };
 
     /************************************************************************
@@ -216,7 +216,7 @@ namespace parser
         , position(1U)
 
         , warning_counter(0)
-		, settings(settings_ref)
+        , settings(settings_ref)
     {
         if (stream.is_open())
             reload();
@@ -254,7 +254,7 @@ namespace parser
         , position(1U)
 
         , warning_counter(0)
-		, settings(settings_ref)
+        , settings(settings_ref)
     {
         if (stream.is_open())
             reload();

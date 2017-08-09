@@ -91,7 +91,7 @@ CV_FS_PRIVATE_END
 CV_FS_PRIVATE_BEGIN
 namespace exception
 {
-	void error(int code, char const * err , POS_TYPE_);
+    void error(int code, char const * err , POS_TYPE_);
 }
 CV_FS_PRIVATE_END
 

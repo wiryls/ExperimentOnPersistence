@@ -99,7 +99,7 @@ namespace ast
         allocator<node_t> for `pair_t`.
         */
         typedef node_t   pair_t[2];
-        
+
         /** @brief Define size_type. Member `.size` is at most an uint32_t
         in order to keep `node_t` always 16 bytes.
         */
@@ -329,7 +329,7 @@ namespace ast
         pop_back(pool_t & pool);
 
         /** @brief Delete all element of built-in container.
-        
+
         Note: Won't release memory. Use `destruct` and `construct` if needed.
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
@@ -340,7 +340,7 @@ namespace ast
         clear(pool_t & pool);
 
         /** @brief Get first element of built-in container.
-        
+
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
         @return Const iterator of the first element.
@@ -375,7 +375,7 @@ namespace ast
         end();
 
         /** @brief Get last element of built-in container.
-        
+
         Note: At present, it is a normal iterator instead of a real reverse
               iterator.
         [Need to specify the TAG]
@@ -395,7 +395,7 @@ namespace ast
 
         /** @brief Get the previous one of the first element of built-in
         container.
-        
+
         Note: At present, it is a normal iterator instead of a real reverse
               iterator.
         [Need to specify the TAG]
@@ -414,7 +414,7 @@ namespace ast
         rend();
 
         /** @brief Search an element by index.
-        
+
         Return end<TAG>() if not found.
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
@@ -434,7 +434,7 @@ namespace ast
         at(typename traits<node_t, TAG>::container::index_type index);
 
         /** @brief Search an element of by key.
-        
+
         Return end<TAG>() if not found.
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]

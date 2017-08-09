@@ -23,7 +23,7 @@ namespace exception
 
     static inline void size_not_allowed(size_t size , POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char, 64>()
                 * "size `" | fmt<16>(size) | "` "
                 | "is too large for this allocator"
@@ -33,7 +33,7 @@ namespace exception
 
     static inline void cnt_not_allowed(POS_TYPE_)
     {
-		error(0,
+        error(0,
             "this allocator produces too much fragmentation or "
             "an internal error occurred"
             , POS_ARGS_
@@ -75,7 +75,7 @@ namespace exception
 
     static inline void null_argument(const char arg[], POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char, 64>()
                 * "argument `" | fmt<16>(arg) | "` is null"
             ), POS_ARGS_
@@ -84,7 +84,7 @@ namespace exception
 
     static inline void invalid_argument(const char arg[], POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char, 64>()
                 * "argument `" | fmt<32>(arg) | "` is invalid"
             ), POS_ARGS_
@@ -94,7 +94,7 @@ namespace exception
     static inline void alloc_failure(size_t size, POS_TYPE_)
     {
         /* no space or other reason */
-		error(0,
+        error(0,
             ( soss_t<char, 64>()
                 * "failed to allocate `" | fmt<16>(size) | "` bytes memory."
             ), POS_ARGS_
@@ -103,7 +103,7 @@ namespace exception
 
     static inline void invalid_aligned(void * mem, POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char, 64>()
                 * "memory `" | fmt<32>(mem) | "` not aligned."
             ), POS_ARGS_
@@ -119,7 +119,7 @@ namespace storage
     /************************************************************************
      * type
      ***********************************************************************/
-    
+
     typedef uint8_t exp_type;
 }
 
@@ -147,7 +147,7 @@ namespace storage
         void  deallocate(pointer mem, size_t size);
 
     public:
-		void report() const;
+        void report() const;
 
     private:
         typedef     runtime_fibonacci_t<exp_type, size_t> rt_cap;
@@ -214,7 +214,7 @@ namespace storage
         <
             (VALUE_BYTE % ALIGN_BYTE == 0) || (ALIGN_BYTE % VALUE_BYTE == 0)
         >::type must_satisfy_the_alignment_condition_t;
-        /* if you see this error, 
+        /* if you see this error,
          * it means x2allocator_t cannot solve alignment problem with type T.
          * sizeof(T) may be 1,2,4,8...
          */
@@ -259,7 +259,7 @@ namespace storage
     {
         x2chunk_t * iter = clist_.fst_;
         while (iter != NULL) {
-            
+
             if (iter->cod_ != make_code(iter, iter->exp_))
                 /* may cause memory leak if ignored */
                 exception::invalid_x2chunk(POS_);
@@ -303,47 +303,47 @@ namespace storage
         free_space(mem, exp);
     }
 
-	template<typename T> inline
-	void x2allocator_t<T>::report() const
-	{
-		::printf("=== report begin ===\n");
-		::printf("%3s|%9s|%10s\n", "exp", "count", "size");
-		{
-			size_t total_size = 0;
-			size_t total_cnt = 0;
-			for (exp_type i = MIN_EXP; i < MAX_EXP; ++i) {
-				size_t cnt = 0;
-				x2free_t * iter = flist_[i];
-				while (iter != NULL) {
-					iter = iter->nxt_;
-					++cnt;
-				}
-				if (cnt) {
-					size_t siz = cnt * rt_cap::at(i) * sizeof(value_type);
-					::printf("%02d, %8d: %f MB\n", i, cnt,siz/1024.0/1024.0);
-					total_size += siz;
-				}
-				total_cnt += cnt * rt_cap::at(i);
-			}
-			::printf
-				( "total %d unused: %f MB\n"
-				, total_cnt
-				, total_size / 1024.0 / 1024.0
-				);
-		}
-		{
-			size_t cnt = 0;
-			size_t siz = 0;
-			x2chunk_t * iter = clist_.fst_;
-			while (iter != NULL) {
-				siz += rt_cap::at(iter->exp_) * sizeof(value_type);
-				++cnt;
-				iter = iter->nxt_;
-			}
-			::printf("total %d allocated: %f MB\n",cnt,siz/1024.0/1024.0);
-		}
-		::printf("=== report end ===\n");
-	}
+    template<typename T> inline
+    void x2allocator_t<T>::report() const
+    {
+        ::printf("=== report begin ===\n");
+        ::printf("%3s|%9s|%10s\n", "exp", "count", "size");
+        {
+            size_t total_size = 0;
+            size_t total_cnt = 0;
+            for (exp_type i = MIN_EXP; i < MAX_EXP; ++i) {
+                size_t cnt = 0;
+                x2free_t * iter = flist_[i];
+                while (iter != NULL) {
+                    iter = iter->nxt_;
+                    ++cnt;
+                }
+                if (cnt) {
+                    size_t siz = cnt * rt_cap::at(i) * sizeof(value_type);
+                    ::printf("%02d, %8d: %f MB\n", i, cnt,siz/1024.0/1024.0);
+                    total_size += siz;
+                }
+                total_cnt += cnt * rt_cap::at(i);
+            }
+            ::printf
+                ( "total %d unused: %f MB\n"
+                , total_cnt
+                , total_size / 1024.0 / 1024.0
+                );
+        }
+        {
+            size_t cnt = 0;
+            size_t siz = 0;
+            x2chunk_t * iter = clist_.fst_;
+            while (iter != NULL) {
+                siz += rt_cap::at(iter->exp_) * sizeof(value_type);
+                ++cnt;
+                iter = iter->nxt_;
+            }
+            ::printf("total %d allocated: %f MB\n",cnt,siz/1024.0/1024.0);
+        }
+        ::printf("=== report end ===\n");
+    }
 
     template<typename T> inline
     uint16_t x2allocator_t<T>::make_code(void const * src, exp_type exp)
@@ -368,7 +368,7 @@ namespace storage
 
         /* add current chunk to freelist */
         if (fst != NULL) {
-            
+
             if (fst->cod_ != make_code(fst, fst->exp_))
                 exception::invalid_x2chunk(POS_);
 
@@ -458,7 +458,7 @@ namespace storage
         if (own == NULL || own->cod_ != make_code(own, own->exp_))
             exception::invalid_x2free(POS_);
         if (++(own->cnt_) == 0)
-            exception::cnt_not_allowed(POS_);        
+            exception::cnt_not_allowed(POS_);
 
         info->used_.own_ = own;
         info->used_.exp_ = exp;
@@ -493,7 +493,7 @@ namespace storage
 
         info->free_.own_ = own;
         info->free_.nxt_ = flist_[exp];
-    
+
         flist_[exp] = &info->free_;
     }
 
@@ -538,8 +538,8 @@ namespace storage
         pointer allocate(             size_t size);
         void  deallocate(pointer mem, size_t size);
 
-	public:
-		void report() const;
+    public:
+        void report() const;
 
     private:
         fx2allocator_t            (fx2allocator_t const &);
@@ -588,7 +588,7 @@ namespace storage
         <
             (VALUE_BYTE % ALIGN_BYTE == 0) || (ALIGN_BYTE % VALUE_BYTE == 0)
         >::type must_satisfy_the_alignment_condition_t;
-        /* if you see this error, 
+        /* if you see this error,
          * it means fx2allocator_t cannot solve alignment problem with type T
          * sizeof(T) may be 1,2,4,8...
          */
@@ -670,47 +670,47 @@ namespace storage
         free_space(mem, exp);
     }
 
-	template<typename T> inline
-	void fx2allocator_t<T>::report() const
-	{
-		::printf("=== report begin ===\n");
-		::printf("%3s|%9s|%10s\n", "exp", "count", "size");
-		{
-			size_t total_size = 0;
-			size_t total_cnt = 0;
-			for (exp_type i = MIN_EXP; i < MAX_EXP; ++i) {
-				size_t cnt = 0;
-				x2free_t * iter = flist_[i];
-				while (iter != NULL) {
-					iter = iter->nxt_;
-					++cnt;
-				}
-				if (cnt) {
-					size_t siz = cnt * rt_cap::at(i) * sizeof(value_type);
-					::printf("%02d, %8d: %f MB\n", i, cnt,siz/1024.0/1024.0);
-					total_size += siz;
-				}
-				total_cnt += cnt * rt_cap::at(i);
-			}
-			::printf
-				( "total %d unused: %f MB\n"
-				, total_cnt
-				, total_size / 1024.0 / 1024.0
-				);
-		}
-		{
-			size_t cnt = 0;
-			size_t siz = 0;
-			x2chunk_t * iter = clist_.fst_;
-			while (iter != NULL) {
-				siz += rt_cap::at(iter->exp_) * sizeof(value_type);
-				++cnt;
-				iter = iter->nxt_;
-			}
-			::printf("total %d allocated: %f MB\n",cnt,siz/1024.0/1024.0);
-		}
-		::printf("=== report end ===\n");
-	}
+    template<typename T> inline
+    void fx2allocator_t<T>::report() const
+    {
+        ::printf("=== report begin ===\n");
+        ::printf("%3s|%9s|%10s\n", "exp", "count", "size");
+        {
+            size_t total_size = 0;
+            size_t total_cnt = 0;
+            for (exp_type i = MIN_EXP; i < MAX_EXP; ++i) {
+                size_t cnt = 0;
+                x2free_t * iter = flist_[i];
+                while (iter != NULL) {
+                    iter = iter->nxt_;
+                    ++cnt;
+                }
+                if (cnt) {
+                    size_t siz = cnt * rt_cap::at(i) * sizeof(value_type);
+                    ::printf("%02d, %8d: %f MB\n", i, cnt,siz/1024.0/1024.0);
+                    total_size += siz;
+                }
+                total_cnt += cnt * rt_cap::at(i);
+            }
+            ::printf
+                ( "total %d unused: %f MB\n"
+                , total_cnt
+                , total_size / 1024.0 / 1024.0
+                );
+        }
+        {
+            size_t cnt = 0;
+            size_t siz = 0;
+            x2chunk_t * iter = clist_.fst_;
+            while (iter != NULL) {
+                siz += rt_cap::at(iter->exp_) * sizeof(value_type);
+                ++cnt;
+                iter = iter->nxt_;
+            }
+            ::printf("total %d allocated: %f MB\n",cnt,siz/1024.0/1024.0);
+        }
+        ::printf("=== report end ===\n");
+    }
 
     template<typename T> inline
     void fx2allocator_t<T>::make_chunk(exp_type exp)
@@ -840,7 +840,7 @@ namespace storage { namespace internal
         inline base() : alloc_() {};
         Alloc<Type> alloc_;
     };
-    
+
     template<template<typename> class Alloc>
     class base<end, Alloc> {};
 

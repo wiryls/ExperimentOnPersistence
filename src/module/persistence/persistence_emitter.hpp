@@ -101,7 +101,7 @@ namespace emitter
 
         virtual state_type top() const = 0;
 
-	public:
+    public:
         virtual void error(event_type event) const = 0;
     };
 }
@@ -303,7 +303,7 @@ namespace emitter
 
 namespace io
 {
-	class stream_t;
+    class stream_t;
 }
 
 namespace emitter
@@ -340,7 +340,7 @@ namespace emitter
 
     private:
         stack_t stack_;
-		io::stream_t * stream_;
+        io::stream_t * stream_;
         bool    is_container_empty_;
     };
 }

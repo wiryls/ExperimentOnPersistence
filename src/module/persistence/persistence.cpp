@@ -27,7 +27,7 @@ namespace exception
     inline static void failed_to_parse(
         const char * filename, const char * msg, POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char, 512>()
                 * "failed to parse file `"
                 | fmt<64>(filename)
@@ -39,7 +39,7 @@ namespace exception
     }
     inline static void failed_to_open(const char * filename, POS_TYPE_)
     {
-		error(0,
+        error(0,
             ( soss_t<char, 256>()
                 * "failed to open file `"
                 | fmt<64>(filename)
@@ -49,7 +49,7 @@ namespace exception
     }
     inline static void failed_to_build_stream(POS_TYPE_) /* internal error */
     {
-		error(0, "internal error - failed to build stream", POS_ARGS_);
+        error(0, "internal error - failed to build stream", POS_ARGS_);
     }
     inline static void invalid_format(int format, POS_TYPE_)
     {
@@ -74,7 +74,7 @@ namespace exception
     }
     inline static void invalid_filestorage(POS_TYPE_) /* internal error */
     {
-		error(0, "FileStorage failed to initialize", POS_ARGS_);
+        error(0, "FileStorage failed to initialize", POS_ARGS_);
     }
     inline static void index_out_of_range(size_t index, POS_TYPE_)
     {
@@ -98,7 +98,7 @@ namespace exception
     }
     inline static void invalid_filenode(POS_TYPE_) /* internal error */
     {
-		error(0, "FileNode is empty or failed to initialize", POS_ARGS_);
+        error(0, "FileNode is empty or failed to initialize", POS_ARGS_);
     }
     inline static void type_not_match(
         const char * expected, ast::tag_t get, POS_TYPE_)
@@ -138,7 +138,7 @@ namespace experimental
 {
     using namespace CV_FS_PRIVATE_NS;
 
-	typedef parser::message_t string_t;
+    typedef parser::message_t string_t;
 }
 
 /****************************************************************************
@@ -159,7 +159,7 @@ namespace experimental
         typedef value_type       & reference;
         typedef value_type const * const_pointer;
         typedef value_type const & const_reference;
-		typedef ast::pool_t        allocator_t;
+        typedef ast::pool_t        allocator_t;
 
     public:
         reference     node_;
@@ -167,9 +167,9 @@ namespace experimental
 
     public:
         explicit Impl(reference node, allocator_t & alloc)
-			: node_(node)
-			, pool_(alloc)
-		{}
+            : node_(node)
+            , pool_(alloc)
+        {}
     };
 
     /************************************************************************
@@ -209,11 +209,11 @@ namespace experimental
         if (empty())
             exception::invalid_filenode(POS_);
 
-		Impl::reference node = impl->node_;
+        Impl::reference node = impl->node_;
         if (node.type() != SEQ)
             exception::type_not_match(SEQ, node.type(), POS_);
 
-		Impl::pointer child = node.at<SEQ>(static_cast<uint32_t>(index));
+        Impl::pointer child = node.at<SEQ>(static_cast<uint32_t>(index));
         if (child == NULL)
             exception::index_out_of_range(index, POS_);
 
@@ -231,7 +231,7 @@ namespace experimental
         if (empty())
             exception::invalid_filenode(POS_);
 
-		Impl::reference node = impl->node_;
+        Impl::reference node = impl->node_;
         if (node.type() != MAP)
             exception::type_not_match(MAP, node.type(), POS_);
 
@@ -256,7 +256,7 @@ namespace experimental
         if (empty())
             exception::invalid_filenode(POS_);
 
-		Impl::reference node = impl->node_;
+        Impl::reference node = impl->node_;
         if (node.type() != I64)
             exception::type_not_match(I64, node.type(), POS_);
 
@@ -270,7 +270,7 @@ namespace experimental
         if (empty())
             exception::invalid_filenode(POS_);
 
-		Impl::reference node = impl->node_;
+        Impl::reference node = impl->node_;
         if (node.type() != DBL)
             exception::type_not_match(DBL, node.type(), POS_);
 
@@ -283,7 +283,7 @@ namespace experimental
         if (empty())
             exception::invalid_filenode(POS_);
 
-		Impl::reference node = impl->node_;
+        Impl::reference node = impl->node_;
         if (node.type() != STR)
             exception::type_not_match(STR, node.type(), POS_);
 
@@ -293,9 +293,9 @@ namespace experimental
     bool FileNode::empty() const
     {
         using namespace ast;
-		return impl == NULL
+        return impl == NULL
             || impl->node_.type() == NIL
-			;
+            ;
     }
 }
 
@@ -348,8 +348,8 @@ namespace experimental
 
         /* [0]create a copy of `query` */
         string_t string;
-		string.push_back(query, chars::strlen(query));
-		string.push_back(0);
+        string.push_back(query, chars::strlen(query));
+        string.push_back(0);
         char * buffer = string; /* not safe if string realloced */
 
         if (settings.mode & FileStorage::MEMORY) {
@@ -382,8 +382,8 @@ namespace experimental
                 buffer[1024] = flag;
 
             settings.enable_memory = true;
-			settings.data.push_back(buffer, chars::strlen(buffer));
-		    settings.data.push_back(0);
+            settings.data.push_back(buffer, chars::strlen(buffer));
+            settings.data.push_back(0);
             return;
         }
 
@@ -415,8 +415,8 @@ namespace experimental
             }
         }
 
-		settings.filename.push_back(buffer, chars::strlen(buffer));
-		settings.filename.push_back(0);
+        settings.filename.push_back(buffer, chars::strlen(buffer));
+        settings.filename.push_back(0);
 
         /* analyze type of filestream */
         if (settings.format == FileStorage::AUTO) {
@@ -445,7 +445,7 @@ namespace experimental
         Impl() : ast_(), fsm_() {}
 
         ast::tree_t<char>    ast_;
-		emitter::handler_t * fsm_; // unique_ptr
+        emitter::handler_t * fsm_; // unique_ptr
     };
 
     /************************************************************************
@@ -534,7 +534,7 @@ namespace experimental
 
         /* [2] R or W */
         if (settings.mode == io::READ)
-		{
+        {
             ast::tree_t<char> & tree =  impl->ast_;
             parser::parse_funcion_t parse = NULL;
             switch (settings.format)
@@ -558,13 +558,13 @@ namespace experimental
                 // TODO: warnings
                 ;
             }
-			delete stream;
+            delete stream;
         }
-		else if (settings.mode == io::WRITE)
-		{
+        else if (settings.mode == io::WRITE)
+        {
             emitter::handler_t * & fsm =  impl->fsm_;
-			fsm = new emitter::json_fsm_t(stream);
-		}
+            fsm = new emitter::json_fsm_t(stream);
+        }
 
         return isOpen();
     }
@@ -576,24 +576,24 @@ namespace experimental
 
         return impl != NULL
             &&  (  impl->ast_.empty() == false
-		        || impl->fsm_ != NULL
-				)
+                || impl->fsm_ != NULL
+                )
             ;
     }
 
     void FileStorage::release()
     {
-		if (impl->ast_.empty() == false) {
-			//impl->ast_.pool().allocator<char>().report();
-			//impl->ast_.pool().allocator<ast::node_t<char>>().report();
+        if (impl->ast_.empty() == false) {
+            //impl->ast_.pool().allocator<char>().report();
+            //impl->ast_.pool().allocator<ast::node_t<char>>().report();
             impl->ast_.clear();
-			//impl->ast_.pool().allocator<char>().report();
-			//impl->ast_.pool().allocator<ast::node_t<char>>().report();
-		}
-		if (impl->fsm_ != NULL) {
-			delete (impl->fsm_);
-			impl->fsm_ = NULL;
-		}
+            //impl->ast_.pool().allocator<char>().report();
+            //impl->ast_.pool().allocator<ast::node_t<char>>().report();
+        }
+        if (impl->fsm_ != NULL) {
+            delete (impl->fsm_);
+            impl->fsm_ = NULL;
+        }
     }
 
     FileNode FileStorage::root(int /* streamidx*/ ) const
@@ -640,8 +640,8 @@ namespace experimental
         {
             std::cout << '"';
             typedef char const * const_iter;
-			const_iter iter_beg = node.begin<STR>();
-			const_iter iter_end = node.  end<STR>();
+            const_iter iter_beg = node.begin<STR>();
+            const_iter iter_end = node.  end<STR>();
             for (const_iter iter = iter_beg; iter != iter_end; ++iter) {
                 const char * cvt = esc_to_chr(*iter);
                 if (cvt == NULL)
@@ -656,8 +656,8 @@ namespace experimental
         {
             std::cout << '[';
             typedef ast::node_t<char> const * const_iter;
-			const_iter iter_beg = node.begin<SEQ>();
-			const_iter iter_end = node.  end<SEQ>();
+            const_iter iter_beg = node.begin<SEQ>();
+            const_iter iter_end = node.  end<SEQ>();
             for (const_iter iter = iter_beg; iter != iter_end; ++iter) {
                 std::cout << (iter == iter_beg ? "\n" : ",\n");
                 visit(*iter, level + 1, level + 1);
@@ -671,8 +671,8 @@ namespace experimental
         {
             std::cout << '{';
             typedef ast::node_t<char>::pair_t const * const_iter;
-			const_iter iter_beg = node.begin<MAP>();
-			const_iter iter_end = node.  end<MAP>();
+            const_iter iter_beg = node.begin<MAP>();
+            const_iter iter_end = node.  end<MAP>();
 
             for (const_iter iter = iter_beg; iter != iter_end; ++iter) {
                 std::cout << (iter == iter_beg ? "\n" : ",\n");
@@ -699,60 +699,61 @@ namespace experimental
         std::cout << '\n';
     }
 
-	void FileStorage::write(int val)
-	{
-		if (impl == NULL || impl->fsm_ == NULL)
-            exception::invalid_filestorage(POS_);
-		
-		emitter::event_t<emitter::OUT_INT> event; {
-			event.val = val;
-		}
-		*(impl->fsm_) << event;
-	}
-
-	void FileStorage::write(double val)
-	{
-		if (impl == NULL || impl->fsm_ == NULL)
+    void FileStorage::write(int val)
+    {
+        if (impl == NULL || impl->fsm_ == NULL)
             exception::invalid_filestorage(POS_);
 
-		emitter::event_t<emitter::OUT_DBL> event; {
-			event.val = val;
-		}
-		*(impl->fsm_) << event;
-	}
 
-	void FileStorage::write(const char * val, size_t len)
-	{
-		if (impl == NULL || impl->fsm_ == NULL)
+        emitter::event_t<emitter::OUT_INT> event; {
+            event.val = val;
+        }
+        *(impl->fsm_) << event;
+    }
+
+    void FileStorage::write(double val)
+    {
+        if (impl == NULL || impl->fsm_ == NULL)
             exception::invalid_filestorage(POS_);
-		if (val == NULL)
-			return;
-		if (len == 0)
-			len = chars::strlen(val);
 
-		if (*val == '[' && len == 1)
-		{
-			*(impl->fsm_) << emitter::event_t<emitter::BEG_SEQ>();
-		}
-		else if (*val == '{' && len == 1)
-		{
-			*(impl->fsm_) << emitter::event_t<emitter::BEG_MAP>();
-		}
-		else if (*val == ']' && len == 1)
-		{
-			*(impl->fsm_) << emitter::event_t<emitter::END_SEQ>();
-		}
-		else if (*val == '}' && len == 1)
-		{
-			*(impl->fsm_) << emitter::event_t<emitter::END_MAP>();
-		}
-		else
-		{
-			emitter::event_t<emitter::OUT_STR> event; {
-				event.val = val;
-				event.len = len;
-			}
-			*(impl->fsm_) << event;
-		}
-	}
+        emitter::event_t<emitter::OUT_DBL> event; {
+            event.val = val;
+        }
+        *(impl->fsm_) << event;
+    }
+
+    void FileStorage::write(const char * val, size_t len)
+    {
+        if (impl == NULL || impl->fsm_ == NULL)
+            exception::invalid_filestorage(POS_);
+        if (val == NULL)
+            return;
+        if (len == 0)
+            len = chars::strlen(val);
+
+        if (*val == '[' && len == 1)
+        {
+            *(impl->fsm_) << emitter::event_t<emitter::BEG_SEQ>();
+        }
+        else if (*val == '{' && len == 1)
+        {
+            *(impl->fsm_) << emitter::event_t<emitter::BEG_MAP>();
+        }
+        else if (*val == ']' && len == 1)
+        {
+            *(impl->fsm_) << emitter::event_t<emitter::END_SEQ>();
+        }
+        else if (*val == '}' && len == 1)
+        {
+            *(impl->fsm_) << emitter::event_t<emitter::END_MAP>();
+        }
+        else
+        {
+            emitter::event_t<emitter::OUT_STR> event; {
+                event.val = val;
+                event.len = len;
+            }
+            *(impl->fsm_) << event;
+        }
+    }
 }

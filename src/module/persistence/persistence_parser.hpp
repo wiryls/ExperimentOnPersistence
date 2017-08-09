@@ -19,7 +19,7 @@ CV_FS_PRIVATE_BEGIN
 namespace parser
 {
     using io::stream_t;
-	using ast::tree_t;
+    using ast::tree_t;
 
     typedef chars::buffer_t<char, 128, std::allocator> message_t;
 }
@@ -45,8 +45,8 @@ namespace parser
         bool   enable_warning_message;
         bool   treate_warning_as_error;
         size_t warning_maximum;
-		size_t stream_buffer_size;
-		size_t indent_width;      /* '\t' == n' ' */
+        size_t stream_buffer_size;
+        size_t indent_width;      /* '\t' == n' ' */
     };
 
     typedef bool (*parse_funcion_t) (
