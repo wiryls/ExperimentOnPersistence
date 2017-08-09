@@ -9,7 +9,7 @@ The following will be covered:
 
 Related code: [persistence](src/module/persistence).
 
-[node_t](src/module/persistence/persistence_ast_node.hpp)
+[node_t](src/module/persistence/persistence_ast_node.hpp#L91-L92)
 ===
 
 The node is a basic and important part of an abstract syntax tree. And here, this new design only aims at some data interchange format.
@@ -33,7 +33,7 @@ Design
 
 An overview of underlying union `node_t`.
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L91-L467))
 
 ```C++
 template<typename char_t> union node_t
@@ -90,7 +90,7 @@ After reading relevant materials and learning from others, I come up with an int
 
 Take the sequence type as an example:
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L960-L971))
 
 ```C++
 struct layout
@@ -149,7 +149,7 @@ Details
 
 As short strings appear in data exchange format quite often. It is worth to add short string optimization. Also because the size of a node is fixed to 16 bytes, it is easier to optimize.
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L710-L737))
 
 ```C++
 union layout
@@ -219,6 +219,12 @@ We can customize it to control the growth factor of built-in containers.
 ### Memory Pool Requirement
 
 Most methods of `node_t` have a template parameter `pool_t` for a memory pool. It is not a good idea but still needed. With this template parameter, we can wrap up something like `CvMemStorage` to maintain compatibility.
+
+```C++
+pool_t       pool;
+node_t<char> node;
+node.construct(pool);
+```
 
 The `pool` must support allocate and deallocate `char_t` and `node_t<char_t>` type.
 
@@ -336,12 +342,12 @@ Test
 
 ### Test Code Snippet
 
-From [persistence_ast_node.hpp](src/module/unittest/test_io.cpp).
+From [persistence_ast_node.hpp](src/module/unittest/test_io.cpp#L25-26).
 
 ```C++
 {
-	FileStorage fs("citylots.json", FileStorage::READ);
-	fs.release();	
+    FileStorage fs("citylots.json", FileStorage::READ);
+    fs.release();	
 }
 ```
 
