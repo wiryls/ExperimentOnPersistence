@@ -3,13 +3,13 @@ Introduction
 This page is about a new design of the **node** in an abstract syntax tree of some **data exchange format**.
 
 The following will be covered:
-- Node in details.
+- The node in details.
 - Associated parts.
 - Performance.
 
 Related code: [persistence](src/module/persistence).
 
-[node_t](src/module/persistence/persistence_ast_node.hpp#L91-L92)
+[Node](src/module/persistence/persistence_ast_node.hpp#L91-L92)
 ===
 
 The node is a basic and important part of an abstract syntax tree. And here, this new design only aims at some data interchange format.
@@ -22,7 +22,7 @@ The new design:
  - keep always 16 bytes in x86 and x64;
  - is trivial and standard layout (plain old data);
  - support type: null, int64, double, (w)string, sequence, and map;
- - have short string optimization;
+ - have small string optimization;
  - set growth factor of built-in containers to the golden ratio;
  - require memory pool.
 
@@ -132,10 +132,10 @@ With the help of traits paradigm, life is easier.
 
 All built-in type is created in the following way:
 
- 1. Add its type name to `enum tag_t`.
- 2. Create `template<typename char_t> struct traits<node_t<char_t>, NEW_TAG_NAME>`.
- 3. Add its memory layout to `union node_t`.
- 4. Add new methods to `node_t` if necessary. 
+  1. Add its type name to `enum tag_t`.
+  2. Create `template<typename char_t> struct traits<node_t<char_t>, NEW_TAG_NAME>`.
+  3. Add its memory layout to `union node_t`.
+  4. Add new methods to `node_t` if necessary. 
 
 Mostly, methods of `node_t` take the advantage of SFINAE. For example:
 ```C++
@@ -149,16 +149,16 @@ We must firstly define `size_type` in `traits` to call method `capacity<TAG>()` 
 Details
 ---
 
-### Short String Optimization
+### Small String Optimization
 
-As short strings appear in data exchange format quite often. It is worth to add short string optimization. Also because the size of a node is fixed to 16 bytes, it is easier to optimize.
+As small strings appear in data exchange format quite often. It is worth to add small string optimization. Also because the size of a node is fixed to 16 bytes, it is easier to optimize.
 
 **Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L710-L737))
 
 ```C++
 union layout
 {
-    /* short string */
+    /* small string */
     union
     {
         char_t raw[14 / sizeof(char_t)];
@@ -202,7 +202,7 @@ union layout
 +---------------------------------------------------------------+
 ```
 
-As mentioned above, `uint8_t tag` is fixed at the last byte of a node. The rest part is used to store necessary data of a string. If it is `node_t<char>` ( or`node_t<char16_t>`), all string less than 13 (or 6) characters will be stored as a short string. If not, `str.sht.ext.siz` will be set to 0xFF and it means NOT a short string.
+As mentioned above, `uint8_t tag` is fixed at the last byte of a node. The rest part is used to store necessary data of a string. If it is `node_t<char>` ( or`node_t<char16_t>`), all string less than 13 (or 6) characters will be stored as a small string. If not, `str.sht.ext.siz` will be set to 0xFF and it means NOT a small string.
 
 ### Growth Factor of Built-in Containers
 
@@ -307,9 +307,10 @@ const char str[] = "string";
 node.destruct(pool);
 ```
 
-Obviously, the interface looks unfriendly. Because it is designed to be low-level and plain old data, there are no constructors, destructor, and operators. Because it needs compatibility for some stateful memory pool, there is always a template parameter for the pool. They make the interface quite unfriendly.
+Obviously, the interface looks unfriendly. Because it is designed to be low-level and plain old data, there are no constructors, destructor, and operators. Because it needs compatibility for some stateful memory pool, there is always a template parameter for the pool. They make the interface quite unfriendly. Besides, if we only use some stateful allocators, we can remove the template parameter `pool_t`.
 
-Generally speaking, we still need a high-level interface to wrap it up. For example:
+Generally speaking, we may need a high-level interface to wrap it up. For example:
+
 ```C++
 class FileNode
 {
@@ -328,6 +329,52 @@ private:
 ```
 
 And then the interface will be friendly via function overloading.
+
+Comparison
+---
+
+**Original**:
+
+```C++
+typedef struct CvFileNode
+{
+    int tag;
+    struct CvTypeInfo* info;
+    union
+    {
+        double f;
+        int i;
+        CvString str;
+        CvSeq* seq;
+        CvFileNodeHash* map;
+    } data;
+}
+CvFileNode;
+```
+
+**New**:
+
+```C++
+template<typename char_t> union node_t
+{
+    /* ...... */
+
+private:
+    typename traits<node_t, NIL>::layout nil;
+    typename traits<node_t, I64>::layout i64;
+    typename traits<node_t, DBL>::layout dbl;
+    typename traits<node_t, STR>::layout str;
+    typename traits<node_t, SEQ>::layout seq;
+    typename traits<node_t, MAP>::layout map;
+};
+```
+
+**The differences**:
+
+ - Remove member `struct CvTypeInfo* info`. Member `info` is used in RTTI but seems not used in most nodes. To minimize the size of nodes, I removed it. And an additional node is needed to record the type.
+ - `Ordered Map` instead of `Hash Map`. As we all know, the main advantage of `ordered map` is it preserves order. So we can open a file and do some insertion or deletion but the order will not change.
+ - Minimal pointer members. For example, it is `struct ...::layout seq` instead of `Seq * seq` in the union. Memory allocation is reduced here.
+ - Top level union. It shows above. Size of a node is always 16 bytes.
 
 Performance
 ===
@@ -360,18 +407,18 @@ Note:
 
 ### Result
 
-Node Type | Memory Pool | Condition | Time(s) | Memory(MB)
-:--------:|:-----------:|:---------:|--------:|----------:
-`node_t<char>`| Customized Memory Pool | Debug x86   | 90   | 431
-`node_t<char>`| `std::allocator`       | Debug x86   | 92   | 525
-`CvFileNode`  | `CvMemStorage`         | Debug x86   | 45   | 1017
-`node_t<char>`| Customized Memory Pool | Debug x64   | 85   | 431
-`node_t<char>`| `std::allocator`       | Debug x64   | 86   | 586
-`node_t<char>`| Customized Memory Pool | Release x86 | 4.72 | 372
-`node_t<char>`| `std::allocator`       | Release x86 | 5.76 | 363
-`CvFileNode`  | `CvMemStorage`         | Release x86 | 6.48 | 1011
-`node_t<char>`| Customized Memory Pool | Release x64 | 4.05 | 372
-`node_t<char>`| `std::allocator`       | Release x64 | 4.96 | 393
+|   Node Type    |      Memory Pool       |  Condition  | Time(s) | Memory(MB) |
+| :------------: | :--------------------: | :---------: | ------: | ---------: |
+| `node_t<char>` | Customized Memory Pool |  Debug x86  |      90 |        431 |
+| `node_t<char>` |    `std::allocator`    |  Debug x86  |      92 |        525 |
+|  `CvFileNode`  |     `CvMemStorage`     |  Debug x86  |      45 |       1017 |
+| `node_t<char>` | Customized Memory Pool |  Debug x64  |      85 |        431 |
+| `node_t<char>` |    `std::allocator`    |  Debug x64  |      86 |        586 |
+| `node_t<char>` | Customized Memory Pool | Release x86 |    4.72 |        372 |
+| `node_t<char>` |    `std::allocator`    | Release x86 |    5.76 |        363 |
+|  `CvFileNode`  |     `CvMemStorage`     | Release x86 |    6.48 |       1011 |
+| `node_t<char>` | Customized Memory Pool | Release x64 |    4.05 |        372 |
+| `node_t<char>` |    `std::allocator`    | Release x64 |    4.96 |        393 |
 
 Note:
  - Time measure and memory footprint measure are provided by Visual Studio 2017.
@@ -382,7 +429,7 @@ Note:
 
 Reference
 ===
- 1. Modern C++ Design
- 1. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
- 1. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
- 1. [RapidJSON Documentation](http://rapidjson.org/)
+  1. Modern C++ Design
+  2. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
+  3. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
+  4. [RapidJSON Documentation](http://rapidjson.org/)

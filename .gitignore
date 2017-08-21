@@ -2,6 +2,7 @@
 .vs
 bin/
 trash/
+backup/
 **/external/include/gtest
 **/module/gtest/gtest
 **/module/gtest/src
