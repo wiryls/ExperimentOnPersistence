@@ -14,23 +14,23 @@ CV_FS_PRIVATE_BEGIN
 namespace ast
 {
     /***********************************************************************
-     * tag_t
+     * Tag
      ***********************************************************************/
 
-    typedef storage::pool_t<
-        typename utility::tl::make_list<
-            node_t<char>, char
+    typedef storage::Pool<
+        typename utility::tl::MakeList<
+            Node<char>, char
         >::type,
-#ifndef _DEBUG
-        storage::fx2allocator_t
-#else
-        storage::x2allocator_t
-#endif
+#       ifndef _DEBUG
+            storage::FFAllocator
+#       else
+            storage::FAllocator
+#       endif
         //std::allocator
         //cv::allocator
-    > pool_t;
+    > Pool;
 
-    static inline const char * to_string(tag_t tag)
+    static inline const char * to_string(Tag tag)
     {
         switch (tag)
         {
@@ -45,69 +45,69 @@ namespace ast
     }
 
     /***********************************************************************
-     * declaration tree_t
+     * declaration Tree
      ***********************************************************************/
 
-    template<typename char_t>
-    class tree_t
+    template<typename CharType>
+    class Tree
     {
     public:
-        typedef node_t<char_t> node_t;
+        typedef Node<CharType> Node;
 
     public:
-        tree_t();
+        Tree();
 
     public:
         inline void clear();
         inline bool empty() const;
-        inline node_t const & root() const;
-        inline node_t & root();
-        inline pool_t & pool();
+        inline Node const & root() const;
+        inline Node & root();
+        inline Pool & pool();
 
     private:
-        node_t root_;
-        pool_t pool_;
+        Node root_;
+        Pool pool_;
     };
 
     /***********************************************************************
-     * implementation tree_t
+     * implementation Tree
      ***********************************************************************/
 
-    template<typename char_t>
-    inline tree_t<char_t>::tree_t()
+    template<typename CharType>
+    inline Tree<CharType>::Tree()
         : root_()
         , pool_()
     {
         root_.construct(pool_);
     }
 
-    template<typename char_t>
-    inline bool tree_t<char_t>::empty() const
+    template<typename CharType>
+    inline bool Tree<CharType>::empty() const
     {
         return (root_.type() == NIL);
     }
 
-    template<typename char_t>
-    inline void tree_t<char_t>::clear()
+    template<typename CharType>
+    inline void Tree<CharType>::clear()
     {
         root_. destruct(pool_);
         root_.construct(pool_);
     }
 
-    template<typename char_t>
-    inline node_t<char_t> const & tree_t<char_t>::root() const
+    template<typename CharType>
+    inline Node<CharType> const & Tree<CharType>::root() const
     {
         return root_;
     }
 
-    template<typename char_t>
-    inline node_t<char_t> & tree_t<char_t>::root()
+    template<typename CharType>
+    inline Node<CharType> & Tree<CharType>::root()
     {
         return root_;
     }
 
-    template<typename char_t>
-    inline pool_t & tree_t<char_t>::pool()
+    template<typename CharType>
+    inline Pool & Tree<CharType>::pool()
     {
         return pool_;
     }

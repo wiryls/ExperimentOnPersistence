@@ -17,24 +17,24 @@ CV_FS_PRIVATE_BEGIN
 
 namespace chars { namespace internal
 {
-    template<typename char_t> inline bool
-        to_string(uint64_t src, char_t * dst, size_t len) NOTHROW
+    template<typename CharType> inline bool
+        to_string(uint64_t src, CharType * dst, size_t len) NOTHROW
     {
         if (len == 0 || dst == NULL)
             return false;
 
-        char_t * end = dst;
-        char_t * beg = dst;
+        CharType * end = dst;
+        CharType * beg = dst;
 
         do {
-            *end++ = char_t('0') + static_cast<char_t>(src % 10);
+            *end++ = CharType('0') + static_cast<CharType>(src % 10);
             src /= 10;
         } while (--len && src);
 
         if (len == 0)
             return false;
 
-        *end-- = char_t();
+        *end-- = CharType();
         while (beg < end) {
             *beg ^= *end ^= *beg ^= *end;
             ++ beg;
@@ -43,8 +43,8 @@ namespace chars { namespace internal
         return true;
     }
 
-    template<typename char_t> inline bool
-        to_string(int64_t src, char_t * dst, size_t len) NOTHROW
+    template<typename CharType> inline bool
+        to_string(int64_t src, CharType * dst, size_t len) NOTHROW
     {
         if (len == 0 || dst == NULL)
             return false;
@@ -52,7 +52,7 @@ namespace chars { namespace internal
         if (src < 0)
         {
              src = -src;
-            *dst = char_t('-');
+            *dst = CharType('-');
             dst++;
             len--;
         }
@@ -63,83 +63,83 @@ namespace chars { namespace internal
 
 namespace chars
 {
-    template<size_t N, typename char_t> inline bool
-        make_string(char_t const * src, char_t (&dst)[N]) NOTHROW
+    template<size_t N, typename CharType> inline bool
+        make_string(CharType const * src, CharType (&dst)[N]) NOTHROW
     {
         if (src == NULL) {
-            dst[0] = char_t();
+            dst[0] = CharType();
             return true;
         }
 
-        char_t const * rhs = src;
-        char_t       * lhs = dst;
-        char_t       * end = dst + N;
-        while (lhs != end && (*lhs = *rhs) != char_t())
+        CharType const * rhs = src;
+        CharType       * lhs = dst;
+        CharType       * end = dst + N;
+        while (lhs != end && (*lhs = *rhs) != CharType())
             lhs++, rhs++;
         return lhs != end;
     }
 
-    template<typename T, size_t N, typename char_t> inline
-    typename utility::enable_if_t<
-        utility::isinteger_t<T>::value, bool
+    template<typename T, size_t N, typename CharType> inline
+    typename utility::EnableIf<
+        utility::IsInteger<T>::value, bool
     >::type
-        make_string(T src, char_t (&dst)[N]) NOTHROW
+        make_string(T src, CharType (&dst)[N]) NOTHROW
     {
-        typedef typename utility::if_t<
-            utility::issigned_t<T>::value,
+        typedef typename utility::If<
+            utility::IsSigned<T>::value,
              int64_t,
             uint64_t
         >::type int_t;
 
         static const size_t MAX_DIGITS = 21;
-        char_t buf[MAX_DIGITS]; /* big enough buffer for int types */
+        CharType buf[MAX_DIGITS]; /* big enough buffer for int types */
 
         if (!internal::to_string(static_cast<int_t>(src), buf, MAX_DIGITS))
             return false; /* should never appear */
 
-        char_t * rhs = buf;
-        char_t * lhs = dst;
-        char_t * end = dst + N;
-        while (lhs != end && (*lhs = *rhs) != char_t())
+        CharType * rhs = buf;
+        CharType * lhs = dst;
+        CharType * end = dst + N;
+        while (lhs != end && (*lhs = *rhs) != CharType())
             lhs++, rhs++;
         return lhs != end;
     }
 
-    template<size_t N, typename char_t> inline bool
-        make_string(void * ptr, char_t (&dst)[N]) NOTHROW
+    template<size_t N, typename CharType> inline bool
+        make_string(void * ptr, CharType (&dst)[N]) NOTHROW
     {
         static const char mapping[] = "0123456789abcdef";
 
-        char_t buf[(sizeof(void*) << 1) + 2 + 1] = {
-            char_t('0'), char_t('x')
+        CharType buf[(sizeof(void*) << 1) + 2 + 1] = {
+            CharType('0'), CharType('x')
         };
-        char_t * cur = buf + 2;
+        CharType * cur = buf + 2;
         for (size_t i = (sizeof(void*) << 1); i --> 0;)
             *cur++ = mapping[0xF&(reinterpret_cast<size_t>(ptr) >> (i<<2))];
 
-        char_t * rhs = buf;
-        char_t * lhs = dst;
-        char_t * end = dst + N;
-        while (lhs != end && (*lhs = *rhs) != char_t())
+        CharType * rhs = buf;
+        CharType * lhs = dst;
+        CharType * end = dst + N;
+        while (lhs != end && (*lhs = *rhs) != CharType())
             lhs++, rhs++;
         return lhs != end;
     }
 
-    template<size_t N, typename char_t> inline bool
-        make_string(bool src, char_t (&dst)[N]) NOTHROW
+    template<size_t N, typename CharType> inline bool
+        make_string(bool src, CharType (&dst)[N]) NOTHROW
     {
         static const char t[] = "true";
         static const char f[] = "false";
         char const * rhs = src ? t: f;
-        char_t     * lhs = dst;
-        char_t     * end = dst + N;
-        while (lhs != end && (*lhs = char_t(*rhs)) != char_t())
+        CharType     * lhs = dst;
+        CharType     * end = dst + N;
+        while (lhs != end && (*lhs = CharType(*rhs)) != CharType())
             lhs++, rhs++;
         return lhs != end;
     }
 
-    template<size_t N, typename char_t> inline bool
-        make_string(float src, char_t (&dst)[N]) NOTHROW
+    template<size_t N, typename CharType> inline bool
+        make_string(float src, CharType (&dst)[N]) NOTHROW
     {
         static const char  nan[] =  ".Nan";
         static const char  inf[] =  ".Inf";
@@ -198,15 +198,15 @@ namespace chars
             rhs = inf;
         }
 
-        char_t * lhs = dst;
-        char_t * end = dst + N;
-        while (lhs != end && (*lhs = char_t(*rhs)) != char_t())
+        CharType * lhs = dst;
+        CharType * end = dst + N;
+        while (lhs != end && (*lhs = CharType(*rhs)) != CharType())
             lhs++, rhs++;
         return lhs != end;
     }
 
-    template<size_t N, typename char_t> inline bool
-        make_string(double src, char_t (&dst)[N]) NOTHROW
+    template<size_t N, typename CharType> inline bool
+        make_string(double src, CharType (&dst)[N]) NOTHROW
     {
         static const char  nan[] =  ".Nan";
         static const char  inf[] =  ".Inf";
@@ -270,31 +270,31 @@ namespace chars
             rhs = inf;
         }
 
-        char_t * lhs = dst;
-        char_t * end = dst + N;
-        while (lhs != end && (*lhs = char_t(*rhs)) != char_t())
+        CharType * lhs = dst;
+        CharType * end = dst + N;
+        while (lhs != end && (*lhs = CharType(*rhs)) != CharType())
             lhs++, rhs++;
         return lhs != end;
     }
 
-    template<typename char_t, size_t N> inline bool
-        make_string_readable(char_t (&dst)[N]) NOTHROW
+    template<typename CharType, size_t N> inline bool
+        make_string_readable(CharType (&dst)[N]) NOTHROW
     {
-        char_t * cur = dst;
+        CharType * cur = dst;
 
-        for (size_t cnt = N-1; cnt --> 0 && *cur != char_t(); ++cur)
+        for (size_t cnt = N-1; cnt --> 0 && *cur != CharType(); ++cur)
             if (chars::iscntrl(*cur))
-                *cur = char_t('\\');
+                *cur = CharType('\\');
 
-        if (*cur != char_t())
+        if (*cur != CharType())
         {   /* string is too long */
             const char omit[] = "...";
             const char * ptr  = omit;
-            for (size_t cnt = N-1; cnt --> 0 && *ptr != char_t(); ++ptr);
+            for (size_t cnt = N-1; cnt --> 0 && *ptr != CharType(); ++ptr);
 
-            *cur = char_t();
+            *cur = CharType();
             while (ptr != omit)
-                *(--cur) = char_t(*(--ptr));
+                *(--cur) = CharType(*(--ptr));
         }
         return true;
     }
@@ -307,39 +307,33 @@ namespace chars
 namespace chars
 {
     /************************************************************************
-     * declaration - buffer_t
+     * declaration - Buffer
      ***********************************************************************/
 
-    //template<
-    //    typename T,
-    //    size_t N,
-    //    template<typename> class Alloc_T
-    //> class buffer_t;
-
     template<
-        typename T,
+        typename ValueType,
         size_t N,
-        template<typename> class Alloc_T
-    > class buffer_t
+        template<typename> class AtorType
+    > class Buffer
     {
     public:
-        typedef T                   value_type;
-        typedef value_type       *  pointer;
-        typedef value_type       &  reference;
-        typedef value_type const *  const_pointer;
-        typedef value_type const &  const_reference;
-        typedef Alloc_T<value_type> allocator_t;
+        typedef ValueType           ValueType;
+        typedef ValueType       *  pointer;
+        typedef ValueType       &  reference;
+        typedef ValueType const *  const_pointer;
+        typedef ValueType const &  const_reference;
+        typedef AtorType<ValueType> allocator_t;
 
     public:
-        ~buffer_t();
+        ~Buffer();
 
-        explicit buffer_t();
-        explicit buffer_t(allocator_t & alloc);
-        explicit buffer_t(size_t siz, bool is_reserved = false);
-        explicit buffer_t(size_t siz, bool is_reserved, allocator_t & alloc);
+        explicit Buffer();
+        explicit Buffer(allocator_t & alloc);
+        explicit Buffer(size_t siz, bool is_reserved = false);
+        explicit Buffer(size_t siz, bool is_reserved, allocator_t & alloc);
 
-        buffer_t             (buffer_t const & rhs);
-        buffer_t & operator= (buffer_t const & rhs);
+        Buffer             (Buffer const & rhs);
+        Buffer & operator= (Buffer const & rhs);
 
         inline operator       pointer ();
         inline operator const_pointer () const;
@@ -348,7 +342,7 @@ namespace chars
         inline void  push_back(const_reference val);
         inline void   pop_back(size_t n = 1);
         inline void  pop_front(size_t n = 1);   /* inefficient */
-        inline void       swap(buffer_t & rhs); /* inefficient */
+        inline void       swap(Buffer & rhs); /* inefficient */
         inline void      clear();
 
         inline void     resize(size_t size);
@@ -380,24 +374,24 @@ namespace chars
         size_t       siz_;
         size_t       cap_;
         pointer      ptr_;
-        value_type   buf_[N + 1];
+        ValueType    buf_[N + 1];
     };
 
     /************************************************************************
-     * implementation - buffer_t
+     * implementation - Buffer
      ***********************************************************************/
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
-        ~buffer_t()
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
+        ~Buffer()
     {
         if (ptr_ != buf_)
             alloc().deallocate(ptr_, cap_);
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
-        buffer_t()
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
+        Buffer()
         : alc_()
         , alp_()
         , siz_()
@@ -405,9 +399,9 @@ namespace chars
         , ptr_(buf_)
     {}
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
-        buffer_t(allocator_t & allocator)
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
+        Buffer(allocator_t & allocator)
         : alc_()
         , alp_(&allocator)
         , siz_()
@@ -415,9 +409,9 @@ namespace chars
         , ptr_(buf_)
     {}
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
-        buffer_t(size_t n, bool is_reserved)
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
+        Buffer(size_t n, bool is_reserved)
         : alc_()
         , alp_()
         , siz_(is_reserved ? 0 : n)
@@ -425,9 +419,9 @@ namespace chars
         , ptr_(n <= N ? buf_ : alloc().allocate(cap_))
     {}
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
-        buffer_t(size_t n, bool is_reserved, allocator_t & allocator)
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
+        Buffer(size_t n, bool is_reserved, allocator_t & allocator)
         : alc_()
         , alp_(&allocator)
         , siz_(is_reserved ? 0 : n)
@@ -435,21 +429,21 @@ namespace chars
         , ptr_(n <= N ? buf_ : alloc().allocate(cap_))
     {}
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
-        buffer_t(buffer_t const & rhs)
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
+        Buffer(Buffer const & rhs)
         : alc_()
         , alp_(rhs.alp_)
         , siz_(rhs.siz_)
         , cap_(rhs.cap_)
         , ptr_(cap_ <= N ? buf_ : alloc().allocate(cap_))
     {
-        ::memcpy(ptr_, rhs.ptr_, siz_ * sizeof(value_type));
+        ::memcpy(ptr_, rhs.ptr_, siz_ * sizeof(ValueType));
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T> & buffer_t<T, N, Alloc_T>::
-        operator= (buffer_t const & rhs)
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType> & Buffer<T, N, AtorType>::
+        operator= (Buffer const & rhs)
     {
         if (this == &rhs)
             return *this;
@@ -465,27 +459,27 @@ namespace chars
         }
 
         /* copy data */
-        ::memcpy(ptr_, rhs.ptr_, siz_ * sizeof(value_type));
+        ::memcpy(ptr_, rhs.ptr_, siz_ * sizeof(ValueType));
 
         return *this;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
         operator pointer ()
     {
         return ptr_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline Buffer<T, N, AtorType>::
         operator const_pointer () const
     {
         return ptr_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
         push_back(const_pointer mem, size_t siz)
     {
         if (mem == NULL)
@@ -494,12 +488,12 @@ namespace chars
         size_t new_siz_ = siz_ + siz;
         reserve(new_siz_);
 
-        ::memcpy(ptr_ + siz_, mem, siz * sizeof(value_type));
+        ::memcpy(ptr_ + siz_, mem, siz * sizeof(ValueType));
         siz_ = new_siz_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
         push_back(const_reference val)
     {
         size_t old_siz = siz_;
@@ -509,8 +503,8 @@ namespace chars
         ptr_[old_siz] = val;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
         pop_back(size_t n)
     {
         if (siz_ <= n) {
@@ -520,21 +514,21 @@ namespace chars
         }
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
         pop_front(size_t n)
     {
         if (siz_ <= n) {
             siz_ = 0;
         } else {
             siz_ -= n;
-            ::memcpy(ptr_, ptr_ + n, siz_ * sizeof(value_type));
+            ::memcpy(ptr_, ptr_ + n, siz_ * sizeof(ValueType));
         }
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
-        swap(buffer_t & rhs)
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
+        swap(Buffer & rhs)
     {
         if (&rhs == this)
             return;
@@ -561,23 +555,23 @@ namespace chars
         cap_ ^= rhs.cap_ ^= cap_ ^= rhs.cap_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
         clear()
     {
         siz_ = 0;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
         resize(size_t n)
     {
         reserve(n);
         siz_ = n;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline void buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline void Buffer<T, N, AtorType>::
         reserve(size_t n)
     {
         if (n <= cap_)
@@ -588,7 +582,7 @@ namespace chars
         pointer new_ptr_ = alloc().allocate(new_cap_);
 
         /* copy */
-        ::memcpy(new_ptr_, ptr_, siz_ * sizeof(value_type));
+        ::memcpy(new_ptr_, ptr_, siz_ * sizeof(ValueType));
 
         /* dealloc old space */
         if (ptr_ != buf_)
@@ -599,98 +593,98 @@ namespace chars
         ptr_ = new_ptr_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::const_pointer
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::const_pointer
+    Buffer<T, N, AtorType>::
         begin() const
     {
         return ptr_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::const_pointer
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::const_pointer
+    Buffer<T, N, AtorType>::
         end() const
     {
         return ptr_ + siz_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::pointer
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::pointer
+    Buffer<T, N, AtorType>::
         begin()
     {
         return const_cast<pointer>
-            (static_cast<buffer_t const &>(*this).begin());
+            (static_cast<Buffer const &>(*this).begin());
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::pointer
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::pointer
+    Buffer<T, N, AtorType>::
         end()
     {
         return const_cast<pointer>
-            (static_cast<buffer_t const &>(*this).end());
+            (static_cast<Buffer const &>(*this).end());
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::const_reference
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::const_reference
+    Buffer<T, N, AtorType>::
         back() const
     {
         return ptr_[siz_ - size_t(1)];
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::const_reference
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::const_reference
+    Buffer<T, N, AtorType>::
         front() const
     {
         return *ptr_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::reference
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::reference
+    Buffer<T, N, AtorType>::
         back()
     {
         return const_cast<reference>
-            (static_cast<buffer_t const &>(*this).back());
+            (static_cast<Buffer const &>(*this).back());
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::reference
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::reference
+    Buffer<T, N, AtorType>::
         front()
     {
         return const_cast<reference>
-            (static_cast<buffer_t const &>(*this).front());
+            (static_cast<Buffer const &>(*this).front());
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline bool buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline bool Buffer<T, N, AtorType>::
         empty() const
     {
         return siz_ == size_t();
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline size_t buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline size_t Buffer<T, N, AtorType>::
         size() const
     {
         return siz_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline size_t buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline size_t Buffer<T, N, AtorType>::
         capacity() const
     {
         return cap_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline typename buffer_t<T, N, Alloc_T>::allocator_t &
-    buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline typename Buffer<T, N, AtorType>::allocator_t &
+    Buffer<T, N, AtorType>::
         alloc()
     {
         if (alp_ == NULL)
@@ -699,8 +693,8 @@ namespace chars
             return *alp_;
     }
 
-    template<typename T, size_t N, template<typename> class Alloc_T>
-    inline size_t buffer_t<T, N, Alloc_T>::
+    template<typename T, size_t N, template<typename> class AtorType>
+    inline size_t Buffer<T, N, AtorType>::
         ceil2(size_t x)
     {
         if (~(~size_t() >> 1) < x)
@@ -717,7 +711,7 @@ namespace chars
  * static output string stream
  * - noexpt
  * e.g.:
- * soss_t<char, 60>()
+ * Soss<char, 60>()
  *  * fmt<16>(test_string)
  *  | ", float:`"
  *  | fmt<2>(3.14f)
@@ -733,23 +727,23 @@ namespace chars
      * characters
      ***********************************************************************/
 
-    template<typename char_t, size_t N> class chs_t
+    template<typename CharType, size_t N> class chs_t
     {
     public:
-        typedef char_t type[N];
+        typedef CharType type[N];
         inline operator type       &()       NOTHROW;
         inline operator type const &() const NOTHROW;
     private:
         type buffer;
     };
 
-    template<typename char_t, size_t N> inline chs_t<char_t, N>::
+    template<typename CharType, size_t N> inline chs_t<CharType, N>::
         operator type const &() const NOTHROW
     {
         return buffer;
     }
 
-    template<typename char_t, size_t N> inline chs_t<char_t, N>::
+    template<typename CharType, size_t N> inline chs_t<CharType, N>::
         operator type &() NOTHROW
     {
         return buffer;
@@ -762,23 +756,23 @@ namespace chars
     template<typename T> struct isprintable_t
     {
     private:
-        typedef typename utility::tl::make_list<
+        typedef typename utility::tl::MakeList<
             void       *,
             void const *
         >::type list;
     public:
         static const bool value
-            =  utility::tl::contain<list, T>::value
-            || utility::isprimitive_t<T>::value
+            =  utility::tl::Contain<list, T>::value
+            || utility::IsPrimitive<T>::value
             ;
     };
 
-    template<typename char_t, size_t N, typename T> inline
-    typename utility::enable_if_t<
-        isprintable_t<T>::value, chs_t<char_t, N+1>
+    template<typename CharType, size_t N, typename T> inline
+    typename utility::EnableIf<
+        isprintable_t<T>::value, chs_t<CharType, N+1>
     >::type fmt(T value) NOTHROW
     {
-        typedef chs_t<char_t, N + 1> buf_t;
+        typedef chs_t<CharType, N + 1> buf_t;
         typedef typename buf_t::type & type;
 
         buf_t buf;
@@ -787,10 +781,10 @@ namespace chars
         return buf;
     }
 
-    template<size_t N, typename char_t> inline
-    chs_t<char_t, N+1> fmt(char_t const * value) NOTHROW
+    template<size_t N, typename CharType> inline
+    chs_t<CharType, N+1> fmt(CharType const * value) NOTHROW
     {
-        typedef chs_t<char_t, N + 1> buf_t;
+        typedef chs_t<CharType, N + 1> buf_t;
         typedef typename buf_t::type & type;
 
         buf_t buf;
@@ -800,7 +794,7 @@ namespace chars
     }
 
     template<size_t N, typename T> inline
-    typename utility::enable_if_t<
+    typename utility::EnableIf<
         isprintable_t<T>::value,
         chs_t<char, N+1>
     >::type fmt(T value) NOTHROW
@@ -809,7 +803,7 @@ namespace chars
     }
 
     template<size_t N, typename T> inline
-    typename utility::enable_if_t<
+    typename utility::EnableIf<
         isprintable_t<T>::value,
         chs_t<wchar_t, N+1>
     >::type wfmt(T value) NOTHROW
@@ -818,31 +812,31 @@ namespace chars
     }
 
     /************************************************************************
-     * declaration - soss_t
+     * declaration - Soss
      ***********************************************************************/
 
-    template<typename char_t = char, size_t N = 128> class soss_t
+    template<typename CharType = char, size_t N = 128> class Soss
     {
     private:
         /* a fixed size buffer */
-        class buffer_t
+        class Buffer
         {
         public:
-             buffer_t() NOTHROW;
-            ~buffer_t() NOTHROW;
-            buffer_t(buffer_t const & rhs) NOTHROW;
-            inline buffer_t & operator=(buffer_t const & rhs) NOTHROW;
-            inline operator const char_t *() const NOTHROW;
-            inline void put(char_t c) NOTHROW;
-            inline void put(char_t const * src, size_t len) NOTHROW;
+             Buffer() NOTHROW;
+            ~Buffer() NOTHROW;
+            Buffer(Buffer const & rhs) NOTHROW;
+            inline Buffer & operator=(Buffer const & rhs) NOTHROW;
+            inline operator const CharType *() const NOTHROW;
+            inline void put(CharType c) NOTHROW;
+            inline void put(CharType const * src, size_t len) NOTHROW;
             inline void clr() NOTHROW;
         private:
             inline void fin() NOTHROW;
         private:
             static const size_t capacity = N + 1; /* last one for '\0' */
-            char_t *cur;
-            char_t *end;
-            char_t  beg[capacity];
+            CharType *cur;
+            CharType *end;
+            CharType  beg[capacity];
         };
 
     private:
@@ -850,95 +844,95 @@ namespace chars
         template<size_t I> class counter_t
         {
         public:
-            counter_t(buffer_t & buffer) NOTHROW;
-            inline operator const char_t *() const NOTHROW;
+            counter_t(Buffer & buffer) NOTHROW;
+            inline operator const CharType *() const NOTHROW;
         public:
             template<typename T> inline
-            typename utility::enable_if_t<
-                (1 <= I && I <= N && utility::is_same_t<T, char_t>::value),
+            typename utility::EnableIf<
+                (1 <= I && I <= N && utility::IsSame<T, CharType>::value),
                 counter_t<I - 1>
             >::type
             operator|(T rhs) NOTHROW;
 
             template<size_t R> inline
-            typename utility::enable_if_t<
+            typename utility::EnableIf<
                 (R<=I+1 && I <= N), counter_t<I+1-R>
             >::type
-            operator|(char_t const(&rhs)[R]) NOTHROW;
+            operator|(CharType const(&rhs)[R]) NOTHROW;
 
             template<size_t R> inline
-            typename utility::enable_if_t<
+            typename utility::EnableIf<
                 (R<=I+1 && I <= N), counter_t<I+1-R>
             >::type
-            operator|(chs_t<char_t, R> const & rhs) NOTHROW;
+            operator|(chs_t<CharType, R> const & rhs) NOTHROW;
         private:
-            buffer_t & buffer;
+            Buffer & buffer;
         };
 
     public:
         /* method */
-        soss_t() NOTHROW;
-        inline operator const char_t *() const NOTHROW;
+        Soss() NOTHROW;
+        inline operator const CharType *() const NOTHROW;
 
     public:
         template<typename T> inline
-        typename utility::enable_if_t<
-            (1 <= N && utility::is_same_t<T, char_t>::value),
+        typename utility::EnableIf<
+            (1 <= N && utility::IsSame<T, CharType>::value),
             counter_t<N - 1>
         >::type
         operator*(T rhs) NOTHROW;
 
         template<size_t R> inline
-        typename utility::enable_if_t<(R<=N+1), counter_t<N+1-R> >::type
-        operator*(char_t const(&rhs)[R]) NOTHROW;
+        typename utility::EnableIf<(R<=N+1), counter_t<N+1-R> >::type
+        operator*(CharType const(&rhs)[R]) NOTHROW;
 
         template<size_t R> inline
-        typename utility::enable_if_t<(R<=N+1), counter_t<N+1-R> >::type
-        operator*(chs_t<char_t, R> const & rhs) NOTHROW;
+        typename utility::EnableIf<(R<=N+1), counter_t<N+1-R> >::type
+        operator*(chs_t<CharType, R> const & rhs) NOTHROW;
 
     private:
-        buffer_t buffer;
+        Buffer buffer;
     };
 
     /************************************************************************
-     * implementation soss_t::buffer
+     * implementation Soss::buffer
      ***********************************************************************/
 
-    template<typename T, size_t N> inline soss_t<T, N>::buffer_t::
-        buffer_t() NOTHROW
+    template<typename T, size_t N> inline Soss<T, N>::Buffer::
+        Buffer() NOTHROW
         : cur(beg)
         , end(beg + N)
     {
         fin();
     }
 
-    template<typename T, size_t N> inline soss_t<T, N>::buffer_t::
-        ~buffer_t() NOTHROW
+    template<typename T, size_t N> inline Soss<T, N>::Buffer::
+        ~Buffer() NOTHROW
     {}
 
-    template<typename T, size_t N> inline soss_t<T, N>::buffer_t::
-        buffer_t(buffer_t const & rhs) NOTHROW
+    template<typename T, size_t N> inline Soss<T, N>::Buffer::
+        Buffer(Buffer const & rhs) NOTHROW
         : cur(beg + (rhs.cur - rhs.beg)), end(beg + N)
     {
         ::memcpy(beg, rhs.beg, capacity);
     }
 
-    template<typename T, size_t N> inline typename soss_t<T, N>::buffer_t &
-        soss_t<T, N>::buffer_t::
-        operator=(buffer_t const & rhs) NOTHROW
+    template<typename T, size_t N> inline typename Soss<T, N>::Buffer &
+        Soss<T, N>::Buffer::
+        operator=(Buffer const & rhs) NOTHROW
     {
         ::memcpy(beg, rhs.beg, capacity);
         cur = beg + (rhs.cur - rhs.beg);
         end = beg + N;
     }
 
-    template<typename T, size_t N> inline soss_t<T, N>::buffer_t::
+    template<typename T, size_t N> inline Soss<T, N>::Buffer::
         operator const T*() const NOTHROW
     {
         return beg;
     }
 
-    template<typename T, size_t N> inline void soss_t<T, N>::buffer_t::
+    template<typename T, size_t N> inline void Soss<T, N>::Buffer::
         put(T c) NOTHROW
     {
         if (cur != end)
@@ -946,7 +940,7 @@ namespace chars
         fin();
     }
 
-    template<typename T, size_t N> inline void soss_t<T, N>::buffer_t::
+    template<typename T, size_t N> inline void Soss<T, N>::Buffer::
         put(T const * src, size_t len) NOTHROW
     {
         while (cur != end && len --> 0 && *src != T())
@@ -954,40 +948,40 @@ namespace chars
         fin();
     }
 
-    template<typename T, size_t N> inline void soss_t<T, N>::buffer_t::
+    template<typename T, size_t N> inline void Soss<T, N>::Buffer::
         clr() NOTHROW
     {
         cur = beg;
         fin();
     }
 
-    template<typename T, size_t N> inline void soss_t<T, N>::buffer_t::
+    template<typename T, size_t N> inline void Soss<T, N>::Buffer::
         fin() NOTHROW
     {
         *cur = T();
     }
 
     /************************************************************************
-     * implementation soss_t::counter_t
+     * implementation Soss::counter_t
      ***********************************************************************/
 
     template<typename T, size_t N> template<size_t I>
-    soss_t<T, N>::counter_t<I>::
-        counter_t(buffer_t & buf) NOTHROW : buffer(buf)
+    Soss<T, N>::counter_t<I>::
+        counter_t(Buffer & buf) NOTHROW : buffer(buf)
     {}
 
     template<typename T, size_t N> template<size_t I>
-    inline soss_t<T, N>::counter_t<I>::
+    inline Soss<T, N>::counter_t<I>::
         operator const T *() const NOTHROW
     {
         return buffer;
     }
 
     template<typename T, size_t N> template<size_t I> template<typename Ch_T>
-    inline typename utility::enable_if_t<
-        (1 <= I && I <= N && utility::is_same_t<Ch_T, T>::value),
-        typename soss_t<T, N>::AVOID_MSVC_C2244_ counter_t<I - 1>
-    >::type soss_t<T, N>::counter_t<I>::
+    inline typename utility::EnableIf<
+        (1 <= I && I <= N && utility::IsSame<Ch_T, T>::value),
+        typename Soss<T, N>::AVOID_MSVC_C2244_ counter_t<I - 1>
+    >::type Soss<T, N>::counter_t<I>::
         operator|(Ch_T rhs) NOTHROW
     {
         buffer.put(rhs);
@@ -995,10 +989,10 @@ namespace chars
     }
 
     template<typename T, size_t N> template<size_t I> template<size_t R>
-    inline typename utility::enable_if_t<
+    inline typename utility::EnableIf<
         (R<=I+1 && I <= N),
-        typename soss_t<T, N>::AVOID_MSVC_C2244_ counter_t<I+1-R>
-    >::type soss_t<T, N>::counter_t<I>::
+        typename Soss<T, N>::AVOID_MSVC_C2244_ counter_t<I+1-R>
+    >::type Soss<T, N>::counter_t<I>::
         operator|(T const(&rhs)[R]) NOTHROW
     {
         buffer.put(rhs, R - 1);
@@ -1006,10 +1000,10 @@ namespace chars
     }
 
     template<typename T, size_t N> template<size_t I> template<size_t R>
-    inline typename utility::enable_if_t<
+    inline typename utility::EnableIf<
         (R<=I+1 && I <= N),
-        typename soss_t<T, N>::AVOID_MSVC_C2244_ counter_t<I+1-R>
-    >::type soss_t<T, N>::counter_t<I>::
+        typename Soss<T, N>::AVOID_MSVC_C2244_ counter_t<I+1-R>
+    >::type Soss<T, N>::counter_t<I>::
         operator|(chs_t<T, R> const & rhs) NOTHROW
     {
         buffer.put(rhs, R - 1);
@@ -1017,35 +1011,35 @@ namespace chars
     }
 
     /************************************************************************
-     * implementation soss_t
+     * implementation Soss
      ***********************************************************************/
 
-    template<typename T, size_t N> inline soss_t<T, N>::soss_t() NOTHROW
+    template<typename T, size_t N> inline Soss<T, N>::Soss() NOTHROW
         : buffer()
     {}
 
-    template<typename T, size_t N> inline soss_t<T, N>::
+    template<typename T, size_t N> inline Soss<T, N>::
         operator const T *() const NOTHROW
     {
         return buffer;
     }
 
-    template<typename T, size_t N> template<typename char_t> inline
-    typename utility::enable_if_t<
-        (1 <= N && utility::is_same_t<char_t, T>::value),
-        typename soss_t<T, N>::AVOID_MSVC_C2244_ counter_t<N - 1>
-    >::type soss_t<T, N>::
-        operator*(char_t rhs) NOTHROW
+    template<typename T, size_t N> template<typename CharType> inline
+    typename utility::EnableIf<
+        (1 <= N && utility::IsSame<CharType, T>::value),
+        typename Soss<T, N>::AVOID_MSVC_C2244_ counter_t<N - 1>
+    >::type Soss<T, N>::
+        operator*(CharType rhs) NOTHROW
     {
         buffer.clr();
         return (counter_t<N>(buffer) | rhs);
     }
 
     template<typename T, size_t N> template<size_t R> inline
-    typename utility::enable_if_t<
+    typename utility::EnableIf<
         (R<=N+1),
-        typename soss_t<T, N>::AVOID_MSVC_C2244_ counter_t<N+1-R>
-    >::type soss_t<T, N>::
+        typename Soss<T, N>::AVOID_MSVC_C2244_ counter_t<N+1-R>
+    >::type Soss<T, N>::
         operator*(T const(&rhs)[R]) NOTHROW
     {
         buffer.clr();
@@ -1053,10 +1047,10 @@ namespace chars
     }
 
     template<typename T, size_t N> template<size_t R> inline
-    typename utility::enable_if_t<
+    typename utility::EnableIf<
         (R<=N+1),
-        typename soss_t<T, N>::AVOID_MSVC_C2244_ counter_t<N+1-R>
-    >::type soss_t<T, N>::
+        typename Soss<T, N>::AVOID_MSVC_C2244_ counter_t<N+1-R>
+    >::type Soss<T, N>::
         operator*(chs_t<T, R> const & rhs) NOTHROW
     {
         buffer.clr();

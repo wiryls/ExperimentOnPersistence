@@ -43,30 +43,30 @@ namespace code { namespace base64
  ***************************************************************************/
 namespace code { namespace binarization
 {
-    template<typename Type_T> inline size_t encode
-        (Type_T          src, uint8_t * dst);
+    template<typename ValueType> inline size_t encode
+        (ValueType       src, uint8_t   * dst);
 
-    template<typename Type_T> inline size_t encode
-        (uint8_t const * src, uint8_t * dst);
+    template<typename ValueType> inline size_t encode
+        (uint8_t const * src, uint8_t   * dst);
 
-    template<typename Type_T> inline size_t decode
-        (uint8_t const * src, Type_T  & dst);
+    template<typename ValueType> inline size_t decode
+        (uint8_t const * src, ValueType & dst);
 
-    template<typename Type_T> inline size_t decode
-        (uint8_t const * src, uint8_t * dst);
+    template<typename ValueType> inline size_t decode
+        (uint8_t const * src, uint8_t   * dst);
 }}
 
 namespace code { namespace binarization
 {
-    template<typename Int_T> inline size_t
-        encode(Int_T src, uint8_t * dst)
+    template<typename IntType> inline size_t
+        encode(IntType src, uint8_t * dst)
     {
-        size_t cnt = sizeof(Int_T);
+        size_t cnt = sizeof(IntType);
         while (cnt --> size_t(0)) {
             *dst++ = static_cast<uint8_t>(src);
             src >>= 8 /* CHAR_BIT */;
         }
-        return sizeof(Int_T);
+        return sizeof(IntType);
     }
 
     template<> inline size_t encode(double src, uint8_t * dst)
@@ -83,19 +83,20 @@ namespace code { namespace binarization
         return encode(u, dst);
     }
 
-    template<typename Type_T> inline size_t
+    template<typename ValueType> inline size_t
         encode(uint8_t const * src, uint8_t * dst)
     {
-        return encode<Type_T>(*reinterpret_cast<Type_T const *>(src), dst);
+        return encode<ValueType>
+            (*reinterpret_cast<ValueType const *>(src), dst);
     }
 
-    template<typename Int_T> inline size_t
-        decode(uint8_t const * src, Int_T & dst)
+    template<typename IntType> inline size_t
+        decode(uint8_t const * src, IntType & dst)
     {
-        dst = Int_T(0);
-        for (size_t i = size_t(0); i < sizeof(Int_T); i++)
-            dst |= (static_cast<Int_T>(*src++) << (i * 8U /* CHAR_BIT */));
-        return sizeof(Int_T);
+        dst = IntType(0);
+        for (size_t i = size_t(0); i < sizeof(IntType); i++)
+            dst |= (static_cast<IntType>(*src++) << (i * 8U /* CHAR_BIT */));
+        return sizeof(IntType);
     }
 
     template<> inline size_t decode(uint8_t const * src, double & dst)
@@ -114,10 +115,10 @@ namespace code { namespace binarization
         return sizeof(dst);
     }
 
-    template<typename Type_T> inline size_t
+    template<typename ValueType> inline size_t
         decode(uint8_t const * src, uint8_t * dst)
     {
-        return decode<Type_T>(src, *reinterpret_cast<Type_T *>(dst));
+        return decode<ValueType>(src, *reinterpret_cast<ValueType *>(dst));
     }
 }}
 

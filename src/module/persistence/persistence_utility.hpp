@@ -15,34 +15,34 @@ CV_FS_PRIVATE_BEGIN
 namespace utility
 {
     /* enable_if */
-    template<bool Expr, class Type_T = void>
-    struct enable_if_t {};
-    template<class Type_T>
-    struct enable_if_t<true, Type_T> { typedef Type_T type; };
+    template<bool Expr, class TypeType = void>
+    struct EnableIf {};
+    template<class TypeType>
+    struct EnableIf<true, TypeType> { typedef TypeType type; };
 
     /* is_same */
-    template<typename Lhs_T, typename Rhs_T> struct is_same_t
+    template<typename LhsType, typename RhsType> struct IsSame
     { static const bool value = false; };
-    template<typename Lhs_T>                 struct is_same_t<Lhs_T, Lhs_T>
+    template<typename LhsType> struct IsSame<LhsType, LhsType>
     { static const bool value = true;  };
 
     /* if */
-    template<bool Expr, typename Then_T, typename Else_T>
-    struct if_t;
-    template<typename Then_T, typename Else_T>
-    struct if_t< true, Then_T, Else_T> { typedef Then_T type; };
-    template<typename Then_T, typename Else_T>
-    struct if_t<false, Then_T, Else_T> { typedef Else_T type; };
+    template<bool Expr, typename ThenType, typename ElseType>
+    struct If;
+    template<typename ThenType, typename ElseType>
+    struct If< true, ThenType, ElseType> { typedef ThenType type; };
+    template<typename ThenType, typename ElseType>
+    struct If<false, ThenType, ElseType> { typedef ElseType type; };
 
     /* assert */
-    template<bool expr> struct assert_t;
-    template<>          struct assert_t<true> { typedef void type; };
+    template<bool expr> struct Assert;
+    template<>          struct Assert<true> { typedef void type; };
 
     /* remove reference and const */
-    template<typename T> struct remove_cv             { typedef T type; };
-    template<typename T> struct remove_cv<T &>        { typedef T type; };
-    template<typename T> struct remove_cv<T const>    { typedef T type; };
-    template<typename T> struct remove_cv<T const &>  { typedef T type; };
+    template<typename T> struct RemoveCV             { typedef T type; };
+    template<typename T> struct RemoveCV<T &>        { typedef T type; };
+    template<typename T> struct RemoveCV<T const>    { typedef T type; };
+    template<typename T> struct RemoveCV<T const &>  { typedef T type; };
 }
 
 /****************************************************************************
@@ -51,26 +51,26 @@ namespace utility
 
 namespace utility { namespace tl
 {
-    /* end of any list */
+    /* end of any List */
 
-    struct end {};
+    struct End {};
 
-    /* list */
+    /* List */
 
-    template<typename Type, typename Next> struct iter;
+    template<typename Type, typename Next> struct Iter;
 
-    template<typename Type, typename NType, typename NNext>
-    struct iter<Type, iter<NType, NNext> >
+    template<typename Type, typename NextType, typename NextNext>
+    struct Iter<Type, Iter<NextType, NextNext> >
     {
-        typedef Type               type;
-        typedef iter<NType, NNext> next;
+        typedef Type                     type;
+        typedef Iter<NextType, NextNext> next;
     };
 
     template<typename Type>
-    struct iter<Type, end>
+    struct Iter<Type, End>
     {
         typedef Type type;
-        typedef end  next;
+        typedef End  next;
     };
 
     /* search Elem from Iter, using Equ for comparing */
@@ -78,8 +78,8 @@ namespace utility { namespace tl
     template<
         typename Iter,
         typename Elem,
-        template<typename Lhs, typename Elem> class Equ = is_same_t
-    > struct find;
+        template<typename Lhs, typename Elem> class Equ = IsSame
+    > struct Find;
 
     template<
         typename BeginType,
@@ -87,35 +87,35 @@ namespace utility { namespace tl
         typename Elem,
         template<typename, typename> class Equ
     >
-    struct find<iter<BeginType, BeginNext>, Elem, Equ>
+    struct Find<Iter<BeginType, BeginNext>, Elem, Equ>
     {
     private:
         template<typename Iter, bool>
-        struct impl;
+        struct Impl;
 
         template<typename Type>
-        struct impl<iter<Type, end>, false>
+        struct Impl<Iter<Type, End>, false>
         {
-            typedef end type;
+            typedef End type;
         };
 
         template<typename Type, typename Next>
-        struct impl<iter<Type, Next>, true>
+        struct Impl<Iter<Type, Next>, true>
         {
-            typedef iter<Type, Next> type;
+            typedef Iter<Type, Next> type;
         };
 
         template<typename LastType, typename Type, typename Next>
-        struct impl<iter<LastType, iter<Type, Next> >, false>
+        struct Impl<Iter<LastType, Iter<Type, Next> >, false>
         {
-            typedef typename impl<
-                iter<Type, Next>, Equ<Type, Elem>::value
+            typedef typename Impl<
+                Iter<Type, Next>, Equ<Type, Elem>::value
             >::type type;
         };
 
     public:
-        typedef typename impl<
-            iter<BeginType, BeginNext>, Equ<BeginType, Elem>::value
+        typedef typename Impl<
+            Iter<BeginType, BeginNext>, Equ<BeginType, Elem>::value
         >::type type;
     };
 
@@ -133,45 +133,45 @@ namespace utility { namespace tl
         IdType   id,
         template<typename, IdType> class Equ
     >
-    struct find_by_id<iter<BeginType, BeginNext>, IdType, id, Equ>
+    struct find_by_id<Iter<BeginType, BeginNext>, IdType, id, Equ>
     {
     private:
         template<typename Iter, bool>
-        struct impl;
+        struct Impl;
 
         template<typename Type>
-        struct impl<iter<Type, end>, false>
+        struct Impl<Iter<Type, End>, false>
         {
-            typedef end type;
+            typedef End type;
         };
 
         template<typename Type, typename Next>
-        struct impl<iter<Type, Next>, true>
+        struct Impl<Iter<Type, Next>, true>
         {
-            typedef iter<Type, Next> type;
+            typedef Iter<Type, Next> type;
         };
 
         template<typename LastType, typename Type, typename Next>
-        struct impl<iter<LastType, iter<Type, Next> >, false>
+        struct Impl<Iter<LastType, Iter<Type, Next> >, false>
         {
-            typedef typename impl<
-                iter<Type, Next>, Equ<Type, id>::value
+            typedef typename Impl<
+                Iter<Type, Next>, Equ<Type, id>::value
             >::type type;
         };
 
     public:
-        typedef typename impl<
-            iter<BeginType, BeginNext>, Equ<BeginType, id>::value
+        typedef typename Impl<
+            Iter<BeginType, BeginNext>, Equ<BeginType, id>::value
         >::type type;
     };
 
-    /* whether list contain elem? */
+    /* whether List contain elem? */
 
     template<
         typename Iter,
         typename Elem,
-        template<typename Lhs, typename Rhs> class Equ = is_same_t
-    > struct contain;
+        template<typename Lhs, typename Rhs> class Equ = IsSame
+    > struct Contain;
 
     template<
         typename Type,
@@ -179,64 +179,64 @@ namespace utility { namespace tl
         typename Elem,
         template<typename Lhs, typename Rhs> class Equ
     >
-    struct contain<iter<Type, Next>, Elem, Equ>
+    struct Contain<Iter<Type, Next>, Elem, Equ>
     {
     private:
-        typedef typename find<iter<Type, Next>, Elem, Equ>::type result;
+        typedef typename Find<Iter<Type, Next>, Elem, Equ>::type result;
     public:
-        static const bool value = !is_same_t<result, end>::value;
+        static const bool value = !IsSame<result, End>::value;
     };
 
-    /* intercept the list if find `end` */
+    /* intercept the List if find `end` */
 
-    template<typename Iter> struct cut;
+    template<typename Iter> struct Cut;
 
     template<
         typename BeginType,
         typename BeginNext
-    > struct cut< iter<BeginType, BeginNext> >
+    > struct Cut< Iter<BeginType, BeginNext> >
     {
     private:
         template<typename Iter>
-        struct impl;
+        struct Impl;
 
 
         template<typename Type, typename Next>
-        struct impl< iter<Type, Next> >
+        struct Impl< Iter<Type, Next> >
         {
-            typedef iter<Type, typename impl<Next>::type > type;
+            typedef Iter<Type, typename Impl<Next>::type > type;
         };
 
         template<typename Next>
-        struct impl< iter<end, Next> >
+        struct Impl< Iter<End, Next> >
         {
-            typedef end type;
+            typedef End type;
         };
 
         template<typename Type>
-        struct impl< iter<Type, end> >
+        struct Impl< Iter<Type, End> >
         {
-            typedef iter<Type, end> type;
+            typedef Iter<Type, End> type;
         };
 
     public:
-        typedef typename impl< iter<BeginType, BeginNext> >::type type;
+        typedef typename Impl< Iter<BeginType, BeginNext> >::type type;
     };
 
-    /* make a list */
+    /* make a List */
 
     template<
         class T00,
-        class T01 = end, class T02 = end, class T03 = end, class T04 = end,
-        class T05 = end, class T06 = end, class T07 = end, class T08 = end,
-        class T09 = end, class T10 = end, class T11 = end, class T12 = end>
-    struct make_list
+        class T01 = End, class T02 = End, class T03 = End, class T04 = End,
+        class T05 = End, class T06 = End, class T07 = End, class T08 = End,
+        class T09 = End, class T10 = End, class T11 = End, class T12 = End>
+    struct MakeList
     {
-        typedef typename cut<
-            iter<T00,
-            iter<T01, iter<T02, iter<T03, iter<T04, iter<T05, iter<T06,
-            iter<T07, iter<T08, iter<T09, iter<T10, iter<T11, iter<T12,
-            end > > > > > > > > > > > > > >::type
+        typedef typename Cut<
+            Iter<T00,
+            Iter<T01, Iter<T02, Iter<T03, Iter<T04, Iter<T05, Iter<T06,
+            Iter<T07, Iter<T08, Iter<T09, Iter<T10, Iter<T11, Iter<T12,
+            End > > > > > > > > > > > > > >::type
 
             type;
     };
@@ -248,12 +248,12 @@ namespace utility { namespace tl
 
 namespace utility
 {
-    /* isprimitive_t */
-    template<typename T> struct isprimitive_t
+    /* IsPrimitive */
+    template<typename T> struct IsPrimitive
     {
     private:
         typedef typename
-            tl::make_list<
+            tl::MakeList<
                bool,
              int8_t,  int16_t,  int32_t,  int64_t,
             uint8_t, uint16_t, uint32_t, uint64_t,
@@ -261,68 +261,68 @@ namespace utility
             >::type
         list;
     public:
-        static const bool value = tl::contain<list, T>::value;
+        static const bool value = tl::Contain<list, T>::value;
     };
 
-    /* issigned_t */
-    template<typename T> struct issigned_t
+    /* IsSigned */
+    template<typename T> struct IsSigned
     {
     private:
-        typedef typename tl::make_list<
+        typedef typename tl::MakeList<
             int8_t, int16_t, int32_t, int64_t
         >::type list;
     public:
-        static const bool value = tl::contain<list, T>::value;
+        static const bool value = tl::Contain<list, T>::value;
     };
 
-    /* isunsigned_t */
-    template<typename T> struct isunsigned_t
+    /* IsUnsigned */
+    template<typename T> struct IsUnsigned
     {
     private:
-        typedef typename tl::make_list<
+        typedef typename tl::MakeList<
             uint8_t, uint16_t, uint32_t, uint64_t
         >::type list;
     public:
-        static const bool value = tl::contain<list, T>::value;
+        static const bool value = tl::Contain<list, T>::value;
     };
 
-    /* isinteger_t */
-    template<typename T> struct isinteger_t
+    /* IsInteger */
+    template<typename T> struct IsInteger
     {
         static const bool value
-            =    issigned_t<T>::value
-            || isunsigned_t<T>::value
+            =    IsSigned<T>::value
+            || IsUnsigned<T>::value
             ;
     };
 
-    /* isreal_t */
-    template<typename T> struct isreal_t
+    /* IsReal */
+    template<typename T> struct IsReal
     {
     private:
-        typedef typename tl::make_list<
+        typedef typename tl::MakeList<
             float, double
         >::type list;
     public:
-        static const bool value = tl::contain<list, T>::value;
+        static const bool value = tl::Contain<list, T>::value;
     };
 
     /* is_type_defined */
-    template<typename Type> struct iscomplete_t
+    template<typename Type> struct IsComplete
     {
     private:
         template<typename, typename = void>
-        struct impl
+        struct Impl
         {
             static const bool value = false;
         };
         template<typename T>
-        struct impl<T, typename enable_if_t<(sizeof(T) > 0)>::type>
+        struct Impl<T, typename EnableIf<(sizeof(T) > 0)>::type>
         {
             static const bool value = true;
         };
 
     public:
-        static const bool value = impl<Type>::value;
+        static const bool value = Impl<Type>::value;
     };
 }
 
@@ -333,13 +333,13 @@ namespace utility
 namespace utility
 {
     template<typename L, typename R> inline
-    typename enable_if_t<
-        isprimitive_t<typename remove_cv<L>::type>::value &&
-        is_same_t<
-            typename remove_cv<L>::type,
-            typename remove_cv<R>::type
+    typename EnableIf<
+        IsPrimitive<typename RemoveCV<L>::type>::value &&
+        IsSame<
+            typename RemoveCV<L>::type,
+            typename RemoveCV<R>::type
         >::value
-        , typename remove_cv<L>::type
+        , typename RemoveCV<L>::type
     >::type
         max(L lhs, R rhs)
     {

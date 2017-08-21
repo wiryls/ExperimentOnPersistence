@@ -12,17 +12,17 @@ CV_FS_PRIVATE_BEGIN
 
 namespace io
 {
-    class stream_t;
-    typedef chars::buffer_t<char, 1024, std::allocator> buffer_t;
+    class Stream;
+    typedef chars::Buffer<char, 1024, std::allocator> Buffer;
 }
 
 namespace io
 {
     /************************************************************************
-     * mode_t
+     * Mode
     ************************************************************************/
 
-    enum mode_t
+    enum Mode
     {
         READ,
         WRITE,
@@ -30,48 +30,48 @@ namespace io
     };
 
     /************************************************************************
-     * stream_t
+     * Stream
     ************************************************************************/
 
-    enum seek_t
+    enum Seek
     {
         BEG,
         CUR,
         END
     };
 
-    enum stream_type
+    enum StreamTarget
     {
         FILE,
         STRING
     };
 
-    class stream_t
+    class Stream
     {
     public:
-        typedef char           char_t;
-        typedef char_t       * string_t;
-        typedef char_t const * const_string_t;
-        typedef int64_t        pos_t;
-        typedef uint64_t       size_type;
+        typedef char             CharType;
+        typedef CharType       * String;
+        typedef CharType const * ConstString;
+        typedef int64_t          Pos;
+        typedef uint64_t         size_type;
 
     public:
-        virtual ~stream_t();
+        virtual ~Stream();
 
-        virtual bool     open(const_string_t path, mode_t mode)        = 0;
-        virtual bool  is_open() const                                  = 0;
-        virtual void    close()                                        = 0;
+        virtual bool     open(ConstString path, Mode mode)          = 0;
+        virtual bool  is_open() const                               = 0;
+        virtual void    close()                                     = 0;
 
-        virtual void     seek(         pos_t offset, seek_t origin)    = 0;
-        virtual pos_t    tell()                                        = 0;
+        virtual void     seek(         Pos offset, Seek origin)     = 0;
+        virtual Pos    tell()                                       = 0;
 
-        virtual size_type write(const_string_t buffer, size_type size) = 0;
-        virtual size_type read(       string_t buffer, size_type size) = 0;
+        virtual size_type write(ConstString buffer, size_type size) = 0;
+        virtual size_type read (     String buffer, size_type size) = 0;
 
-        virtual buffer_t  dump()                                       = 0;
+        virtual Buffer  dump()                                      = 0;
 
     public:
-        static stream_t * build(stream_type type);
+        static Stream * build(StreamTarget type);
     };
 }
 

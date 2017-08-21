@@ -21,14 +21,14 @@ namespace exception
      * exception
      ***********************************************************************/
 
-    using chars::soss_t;
+    using chars::Soss;
     using chars::fmt;
 
     inline static void failed_to_parse(
         const char * filename, const char * msg, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 512>()
+            ( Soss<char, 512>()
                 * "failed to parse file `"
                 | fmt<64>(filename)
                 | "`, hint: "
@@ -40,7 +40,7 @@ namespace exception
     inline static void failed_to_open(const char * filename, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "failed to open file `"
                 | fmt<64>(filename)
                 | '`'
@@ -54,7 +54,7 @@ namespace exception
     inline static void invalid_format(int format, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "unable to determine file format, or"
                 | " format `"
                 | fmt<16>(format)
@@ -65,7 +65,7 @@ namespace exception
     inline static void invalid_mode(int mode, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "mode `"
                 | fmt<16>(mode)
                 | "` is invalid"
@@ -79,7 +79,7 @@ namespace exception
     inline static void index_out_of_range(size_t index, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "index `"
                 | fmt<32>(index)
                 | "` is out of range"
@@ -89,7 +89,7 @@ namespace exception
     inline static void invalid_key(const char * key, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "key `"
                 | fmt<128>(key)
                 | "` is invalid"
@@ -101,10 +101,10 @@ namespace exception
         error(0, "FileNode is empty or failed to initialize", POS_ARGS_);
     }
     inline static void type_not_match(
-        const char * expected, ast::tag_t get, POS_TYPE_)
+        const char * expected, ast::Tag get, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "expect filenode type `"
                 | fmt<64>(expected)
                 | "`,  but get `"
@@ -114,10 +114,10 @@ namespace exception
         );
     }
     inline static void type_not_match(
-        ast::tag_t expected, ast::tag_t get, POS_TYPE_)
+        ast::Tag expected, ast::Tag get, POS_TYPE_)
     {
         error(0,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "expect filenode type `"
                 | fmt<64>(ast::to_string(expected))
                 | "`,  but get `"
@@ -138,7 +138,7 @@ namespace experimental
 {
     using namespace CV_FS_PRIVATE_NS;
 
-    typedef parser::message_t string_t;
+    typedef parser::Message String;
 }
 
 /****************************************************************************
@@ -154,12 +154,12 @@ namespace experimental
     class FileNode::Impl
     {
     public:
-        typedef ast::node_t<char>  value_type;
+        typedef ast::Node<char>  value_type;
         typedef value_type       * pointer;
         typedef value_type       & reference;
         typedef value_type const * const_pointer;
         typedef value_type const & const_reference;
-        typedef ast::pool_t        allocator_t;
+        typedef ast::Pool        allocator_t;
 
     public:
         reference     node_;
@@ -240,7 +240,7 @@ namespace experimental
         key_node.construct(impl->pool_);
         key_node.set<STR>(key, key + len, impl->pool_);
 
-        Impl::value_type::pair_t * child = node.find<MAP>(key_node);
+        Impl::value_type::Pair * child = node.find<MAP>(key_node);
         if (child == NULL)
             exception::invalid_key(key, POS_);
 
@@ -320,8 +320,8 @@ namespace experimental
             , enable_base64(false)
         {}
 
-        string_t filename;
-        string_t data;
+        String filename;
+        String data;
         int      mode;
         int      format;
         bool     enable_memory;
@@ -347,7 +347,7 @@ namespace experimental
         static const char OPT_ENABLE_BASE64 []= "base64";
 
         /* [0]create a copy of `query` */
-        string_t string;
+        String string;
         string.push_back(query, chars::strlen(query));
         string.push_back(0);
         char * buffer = string; /* not safe if string realloced */
@@ -444,8 +444,8 @@ namespace experimental
     public:
         Impl() : ast_(), fsm_() {}
 
-        ast::tree_t<char>    ast_;
-        emitter::handler_t * fsm_; // unique_ptr
+        ast::Tree<char>    ast_;
+        emitter::Handler * fsm_; // unique_ptr
     };
 
     /************************************************************************
@@ -501,10 +501,10 @@ namespace experimental
          */
 
         /* [1] create stream */
-        io::stream_t * stream = NULL;
+        io::Stream * stream = NULL;
         const char * data     = NULL;
         {
-            stream = io::stream_t::build(
+            stream = io::Stream::build(
                 ( settings.enable_memory )
                 ? io::STRING
                 : io::FILE
@@ -513,7 +513,7 @@ namespace experimental
                 exception::failed_to_build_stream(POS_);
 
             /* map `settings.mode` to `stream_mode` */
-            io::mode_t stream_mode = io::READ;
+            io::Mode stream_mode = io::READ;
             switch (settings.mode)
             {
             case READ  : { stream_mode = io::READ;   break; }
@@ -535,8 +535,8 @@ namespace experimental
         /* [2] R or W */
         if (settings.mode == io::READ)
         {
-            ast::tree_t<char> & tree =  impl->ast_;
-            parser::parse_funcion_t parse = NULL;
+            ast::Tree<char> & tree =  impl->ast_;
+            parser::ParseFuncion parse = NULL;
             switch (settings.format)
             {
             //case XML : { parse = parser:: xml::parse; break; }
@@ -545,10 +545,10 @@ namespace experimental
             default: exception::invalid_format(settings.format, POS_); break;
             }
 
-            parser::message_t message;
+            parser::Message message;
             bool status
                 = parse != NULL
-                ? parse(*stream, tree, message, parser::settings_t())
+                ? parse(*stream, tree, message, parser::Settings())
                 : false
                 ;
 
@@ -562,8 +562,8 @@ namespace experimental
         }
         else if (settings.mode == io::WRITE)
         {
-            emitter::handler_t * & fsm =  impl->fsm_;
-            fsm = new emitter::json_fsm_t(stream);
+            emitter::Handler * & fsm =  impl->fsm_;
+            fsm = new emitter::JsonFSM(stream);
         }
 
         return isOpen();
@@ -585,10 +585,10 @@ namespace experimental
     {
         if (impl->ast_.empty() == false) {
             //impl->ast_.pool().allocator<char>().report();
-            //impl->ast_.pool().allocator<ast::node_t<char>>().report();
+            //impl->ast_.pool().allocator<ast::Node<char>>().report();
             impl->ast_.clear();
             //impl->ast_.pool().allocator<char>().report();
-            //impl->ast_.pool().allocator<ast::node_t<char>>().report();
+            //impl->ast_.pool().allocator<ast::Node<char>>().report();
         }
         if (impl->fsm_ != NULL) {
             delete (impl->fsm_);
@@ -627,7 +627,7 @@ namespace experimental
         }
     }
 
-    static inline void visit(ast::node_t<char> const &node, size_t level, size_t t)
+    static inline void visit(ast::Node<char> const &node, size_t level, size_t t)
     {
         using namespace ast;
         tab(t);
@@ -655,7 +655,7 @@ namespace experimental
         case SEQ:
         {
             std::cout << '[';
-            typedef ast::node_t<char> const * const_iter;
+            typedef ast::Node<char> const * const_iter;
             const_iter iter_beg = node.begin<SEQ>();
             const_iter iter_end = node.  end<SEQ>();
             for (const_iter iter = iter_beg; iter != iter_end; ++iter) {
@@ -670,7 +670,7 @@ namespace experimental
         case MAP:
         {
             std::cout << '{';
-            typedef ast::node_t<char>::pair_t const * const_iter;
+            typedef ast::Node<char>::Pair const * const_iter;
             const_iter iter_beg = node.begin<MAP>();
             const_iter iter_end = node.  end<MAP>();
 
@@ -694,7 +694,7 @@ namespace experimental
         if (impl == NULL)
             return;
 
-        ast::node_t<char> & node = impl->ast_.root();
+        ast::Node<char> & node = impl->ast_.root();
         visit(node, 0, 0);
         std::cout << '\n';
     }
@@ -705,7 +705,7 @@ namespace experimental
             exception::invalid_filestorage(POS_);
 
 
-        emitter::event_t<emitter::OUT_INT> event; {
+        emitter::Event<emitter::OUT_INT> event; {
             event.val = val;
         }
         *(impl->fsm_) << event;
@@ -716,7 +716,7 @@ namespace experimental
         if (impl == NULL || impl->fsm_ == NULL)
             exception::invalid_filestorage(POS_);
 
-        emitter::event_t<emitter::OUT_DBL> event; {
+        emitter::Event<emitter::OUT_DBL> event; {
             event.val = val;
         }
         *(impl->fsm_) << event;
@@ -733,23 +733,23 @@ namespace experimental
 
         if (*val == '[' && len == 1)
         {
-            *(impl->fsm_) << emitter::event_t<emitter::BEG_SEQ>();
+            *(impl->fsm_) << emitter::Event<emitter::BEG_SEQ>();
         }
         else if (*val == '{' && len == 1)
         {
-            *(impl->fsm_) << emitter::event_t<emitter::BEG_MAP>();
+            *(impl->fsm_) << emitter::Event<emitter::BEG_MAP>();
         }
         else if (*val == ']' && len == 1)
         {
-            *(impl->fsm_) << emitter::event_t<emitter::END_SEQ>();
+            *(impl->fsm_) << emitter::Event<emitter::END_SEQ>();
         }
         else if (*val == '}' && len == 1)
         {
-            *(impl->fsm_) << emitter::event_t<emitter::END_MAP>();
+            *(impl->fsm_) << emitter::Event<emitter::END_MAP>();
         }
         else
         {
-            emitter::event_t<emitter::OUT_STR> event; {
+            emitter::Event<emitter::OUT_STR> event; {
                 event.val = val;
                 event.len = len;
             }

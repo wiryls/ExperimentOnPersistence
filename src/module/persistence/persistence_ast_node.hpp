@@ -18,13 +18,13 @@ CV_FS_PRIVATE_BEGIN
 
 namespace exception
 {
-    using chars::soss_t;
+    using chars::Soss;
     using chars::fmt;
 
     static inline void node_type_not_match(int now, int ept, POS_TYPE_)
     {
         error(0,
-            ( soss_t<>()
+            ( Soss<>()
                 * "node type is `" | fmt<16>(now) | "`, "
                 | "but not `" | fmt<16>(ept) | '`'
             ), POS_ARGS_
@@ -34,7 +34,7 @@ namespace exception
     static inline void node_type_out_of_range(int now, POS_TYPE_)
     {
         error(0,
-            ( soss_t<>()
+            ( Soss<>()
                 * "node type `" | fmt<16>(now) | "` is out of range "
             ), POS_ARGS_
         );
@@ -53,7 +53,7 @@ namespace ast
 
     //! Enum for node type.
     /*! A node is something like a variant. It can be following types. */
-    enum tag_t
+    enum Tag
     {
         NIL = 0, //!< empty    [scalar][default]
 
@@ -65,18 +65,18 @@ namespace ast
     };
 
     /************************************************************************
-     * node traits
+     * node Traits
      ***********************************************************************/
 
     /** @brief Bind some types or methods to TAG. They make generic
     programming easier.
     */
-    template<typename node_type, tag_t TAG> struct traits;
+    template<typename NodeType, Tag TAG> struct Traits;
 }
 
 namespace ast
 {
-    /** @brief `node_t` is the node type of an abstract syntax tree,
+    /** @brief `Node` is the node type of an abstract syntax tree,
     something like variant. It can be null, int64_t, double, string,
     sequence, map.
 
@@ -84,24 +84,24 @@ namespace ast
      - always 16 bytes in x86 and x64,
      - trivial and standard layout (plain old data),
      - wide char string support,
-     - short string optimization,
+     - small string optimization,
      - growth factor of containers == 1.618,
      - memory pool needed.
     */
-    template<typename char_t>
-    union node_t
+    template<typename CharType>
+    union Node
     {
     public:
 
-        /** @brief `pair_t` is used in container map.
+        /** @brief `Pair` is used in container map.
 
-        Note: It is safe to cast `pair_t[n]` to `node_t[2*n]`. So we can use
-        allocator<node_t> for `pair_t`.
+        Note: It is safe to cast `Pair[n]` to `Node[2*n]`. So we can use
+        allocator<Node> for `Pair`.
         */
-        typedef node_t   pair_t[2];
+        typedef Node   Pair[2];
 
         /** @brief Define size_type. Member `.size` is at most an uint32_t
-        in order to keep `node_t` always 16 bytes.
+        in order to keep `Node` always 16 bytes.
         */
         typedef uint32_t size_type;
 
@@ -110,98 +110,98 @@ namespace ast
         Capacity of a container is stored as an index of fibonacci sequence.
         So we need look up fibonacci sequence at runtime.
         */
-        typedef runtime_fibonacci_t<uint8_t, size_type> cap;
+        typedef RuntimeFibonacci<uint8_t, size_type> Cap;
 
-        /** @brief Make traits `friend`.
+        /** @brief Make Traits `friend`.
         */
-        template<typename, tag_t> friend struct traits;
+        template<typename, Tag> friend struct Traits;
 
     public:
 
         /** @brief Construct this node.
 
-        `node_t` has no constructors. Use this method to construct node.
+        `Node` has no constructors. Use this method to construct node.
         Note: there may be memory leak if node has been constructed.
 
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<typename pool_t> inline
-        void construct(pool_t & pool);
+        template<typename PoolType> inline
+        void construct(PoolType & pool);
 
         /** @overload
-        @param tag  Type of node to be constructed. See enum `tag_t`.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param tag  Type of node to be constructed. See enum `Tag`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<typename pool_t> inline
-        void construct(tag_t tag, pool_t & pool);
+        template<typename PoolType> inline
+        void construct(Tag tag, PoolType & pool);
 
         /** @brief Destruct this node. Released memory if used.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<typename pool_t> inline
-        void destruct(pool_t & pool);
+        template<typename PoolType> inline
+        void destruct(PoolType & pool);
 
         /** @brief `*this = rhs`.
         @param rhs  node to copy.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<typename pool_t> inline
-        void copy(node_t const & rhs, pool_t & pool);
+        template<typename PoolType> inline
+        void copy(Node const & rhs, PoolType & pool);
 
         /** @brief `*this = move(rhs)`.
         @param rhs  node to move.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<typename pool_t> inline
-        void move(node_t & rhs, pool_t & pool);
+        template<typename PoolType> inline
+        void move(Node & rhs, PoolType & pool);
 
         /** @brief Swap `*this` with rhs.
         @param rhs node to swap.
         */
-        inline void swap(node_t & rhs);
+        inline void swap(Node & rhs);
 
         /** @brief Compare `*this` with rhs.
         @param rhs node to compare.
         @return true if *this equal to rhs, false if not.
         */
-        inline bool equal(node_t const & rhs) const;
+        inline bool equal(Node const & rhs) const;
 
         /** @brief Get the type of this node.
-        @return tag of this node. See enum `tag_t`
+        @return tag of this node. See enum `Tag`
         */
-        inline tag_t type() const;
+        inline Tag type() const;
 
         /** @overload
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<tag_t TAG, typename pool_t> inline
+        template<Tag TAG, typename PoolType> inline
         void
-        construct(pool_t & pool);
+        construct(PoolType & pool);
 
         /** @brief Set value of node.
 
         Destruct, re-construct and assign.
         [Need to specify the TAG]
         @param val  `int64_t` or `double` value.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<tag_t TAG, typename pool_t> inline
+        template<Tag TAG, typename PoolType> inline
         void
         set
-        (typename traits<node_t, TAG>::const_reference val, pool_t & pool);
+        (typename Traits<Node, TAG>::const_reference val, PoolType & pool);
 
         /** @overload
         @param beg  Beginning of elements to copy.
         @param end  End of elements to copy. Range: [beg, end)
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<tag_t TAG, typename pool_t> inline
+        template<Tag TAG, typename PoolType> inline
         void
         set
         (
-            typename traits<node_t, TAG>::container::const_iterator beg,
-            typename traits<node_t, TAG>::container::const_iterator end,
-            pool_t & pool
+            typename Traits<Node, TAG>::Container::const_iterator beg,
+            typename Traits<Node, TAG>::Container::const_iterator end,
+            PoolType & pool
         );
 
         /** @brief Get `int64_t` or `double` value of node.
@@ -210,15 +210,15 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return Const reference of value.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::const_reference
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::const_reference
         val() const;
 
         /** @overload
         @return Reference of value.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::reference
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::reference
         val();
 
         /** @brief Get the size of a built-in container.
@@ -227,8 +227,8 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return Size (uint32_t).
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::size_type
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::size_type
         size() const;
 
         /** @brief Get the capacity of a built-in container.
@@ -237,8 +237,8 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return Capacity (uint32_t).
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::size_type
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::size_type
         capacity() const;
 
         /** @brief Get the rawdata of a built-in container.
@@ -247,8 +247,8 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return A pointer to rawdata.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::const_pointer
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::const_pointer
         raw() const;
 
         /** @brief Add a copy of an element to the end of built-in container.
@@ -256,14 +256,14 @@ namespace ast
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
         @param val  An element to copy.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<tag_t TAG, typename pool_t> inline
-        typename traits<node_t, TAG>::container::void_type
+        template<Tag TAG, typename PoolType> inline
+        typename Traits<Node, TAG>::Container::void_type
         push_back
         (
-            typename traits<node_t, TAG>::container::const_reference val,
-            pool_t & pool
+            typename Traits<Node, TAG>::Container::const_reference val,
+            PoolType & pool
         );
 
         /** @brief Move an element to the end of built-in container.
@@ -275,14 +275,14 @@ namespace ast
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
         @param val  An element to move.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         */
-        template<tag_t TAG, typename pool_t> inline
-        typename traits<node_t, TAG>::container::void_type
+        template<Tag TAG, typename PoolType> inline
+        typename Traits<Node, TAG>::Container::void_type
         move_back
         (
-            typename traits<node_t, TAG>::container::reference val,
-            pool_t & pool
+            typename Traits<Node, TAG>::Container::reference val,
+            PoolType & pool
         );
 
         /** @brief Delete an element of built-in container. Do nothing
@@ -291,30 +291,30 @@ namespace ast
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
         @param iter An element to delete.
-        @param pool A collection of allocators. See class `pool_t`.
+        @param pool A collection of allocators. See class `Pool`.
         @return the following element of deleted element.
         */
-        template<tag_t TAG, typename pool_t> inline
-        typename traits<node_t, TAG>::container::iterator
+        template<Tag TAG, typename PoolType> inline
+        typename Traits<Node, TAG>::Container::iterator
         erase
         (
-            typename traits<node_t, TAG>::container::const_iterator iter,
-            pool_t & pool
+            typename Traits<Node, TAG>::Container::const_iterator iter,
+            PoolType & pool
         );
 
         /** @overload
         @param begin Beginning of elements to delete.
         @param end   End of elements to delete. Range: [begin, end)
-        @param pool  A collection of allocators. See class `pool_t`.
+        @param pool  A collection of allocators. See class `Pool`.
         @return the following element of deleted elements.
         */
-        template<tag_t TAG, typename pool_t> inline
-        typename traits<node_t, TAG>::container::iterator
+        template<Tag TAG, typename PoolType> inline
+        typename Traits<Node, TAG>::Container::iterator
         erase
         (
-            typename traits<node_t, TAG>::container::const_iterator begin,
-            typename traits<node_t, TAG>::container::const_iterator end,
-            pool_t & pool
+            typename Traits<Node, TAG>::Container::const_iterator begin,
+            typename Traits<Node, TAG>::Container::const_iterator end,
+            PoolType & pool
         );
 
         /** @brief Delete the last element of built-in container.
@@ -322,22 +322,22 @@ namespace ast
 
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
-        @param pool  A collection of allocators. See class `pool_t`.
+        @param pool  A collection of allocators. See class `Pool`.
         */
-        template<tag_t TAG, typename pool_t> inline
-        typename traits<node_t, TAG>::container::void_type
-        pop_back(pool_t & pool);
+        template<Tag TAG, typename PoolType> inline
+        typename Traits<Node, TAG>::Container::void_type
+        pop_back(PoolType & pool);
 
         /** @brief Delete all element of built-in container.
 
         Note: Won't release memory. Use `destruct` and `construct` if needed.
         [Need to specify the TAG]
         [May throw an exception if TAG does not match]
-        @param pool  A collection of allocators. See class `pool_t`.
+        @param pool  A collection of allocators. See class `Pool`.
         */
-        template<tag_t TAG, typename pool_t> inline
-        typename traits<node_t, TAG>::container::void_type
-        clear(pool_t & pool);
+        template<Tag TAG, typename PoolType> inline
+        typename Traits<Node, TAG>::Container::void_type
+        clear(PoolType & pool);
 
         /** @brief Get first element of built-in container.
 
@@ -345,15 +345,15 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return Const iterator of the first element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::const_iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::const_iterator
         begin() const;
 
         /** @overload
         @return Iterator of the first element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::iterator
         begin();
 
         /** @brief Get the next one of the last element of built-in
@@ -363,15 +363,15 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return Const iterator.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::const_iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::const_iterator
         end() const;
 
         /** @overload
         @return Iterator.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::iterator
         end();
 
         /** @brief Get last element of built-in container.
@@ -382,15 +382,15 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return Const iterator of the last element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::const_reverse_iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::const_reverse_iterator
         rbegin() const;
 
         /** @overload
         @return Iterator of the last element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::reverse_iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::reverse_iterator
         rbegin();
 
         /** @brief Get the previous one of the first element of built-in
@@ -402,15 +402,15 @@ namespace ast
         [May throw an exception if TAG does not match]
         @return Const iterator of the previous one of the first element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::const_reverse_iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::const_reverse_iterator
         rend() const;
 
         /** @overload
         @return Iterator of the previous one of the first element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::reverse_iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::reverse_iterator
         rend();
 
         /** @brief Search an element by index.
@@ -421,17 +421,17 @@ namespace ast
         @param index Index of an element.
         @return Const iterator of the element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::const_iterator
-        at(typename traits<node_t, TAG>::container::index_type index) const;
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::const_iterator
+        at(typename Traits<Node, TAG>::Container::index_type index) const;
 
         /** @overload
         @param index Index of an element.
         @return Iterator of the element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::iterator
-        at(typename traits<node_t, TAG>::container::index_type index);
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::iterator
+        at(typename Traits<Node, TAG>::Container::index_type index);
 
         /** @brief Search an element of by key.
 
@@ -441,29 +441,29 @@ namespace ast
         @param key Key to search. Usually it is the first element of a pair.
         @return Const iterator of the element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::const_iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::const_iterator
         find
-        (typename traits<node_t, TAG>::container::key_const_reference key)
+        (typename Traits<Node, TAG>::Container::key_const_reference key)
         const;
 
         /** @overload
         @param key Key to search. Usually it is the first element of a pair.
         @return Iterator of the element.
         */
-        template<tag_t TAG> inline
-        typename traits<node_t, TAG>::container::iterator
+        template<Tag TAG> inline
+        typename Traits<Node, TAG>::Container::iterator
         find
-        (typename traits<node_t, TAG>::container::key_const_reference key);
+        (typename Traits<Node, TAG>::Container::key_const_reference key);
 
     private:
 
-        typename traits<node_t, NIL>::layout nil; //!< Memory layout of NIL
-        typename traits<node_t, I64>::layout i64; //!< Memory layout of I64
-        typename traits<node_t, DBL>::layout dbl; //!< Memory layout of DBL
-        typename traits<node_t, STR>::layout str; //!< Memory layout of STR
-        typename traits<node_t, SEQ>::layout seq; //!< Memory layout of SEQ
-        typename traits<node_t, MAP>::layout map; //!< Memory layout of MAP
+        typename Traits<Node, NIL>::Layout nil; //!< Memory layout of NIL
+        typename Traits<Node, I64>::Layout i64; //!< Memory layout of I64
+        typename Traits<Node, DBL>::Layout dbl; //!< Memory layout of DBL
+        typename Traits<Node, STR>::Layout str; //!< Memory layout of STR
+        typename Traits<Node, SEQ>::Layout seq; //!< Memory layout of SEQ
+        typename Traits<Node, MAP>::Layout map; //!< Memory layout of MAP
     };
 
 }
@@ -474,53 +474,53 @@ namespace ast
 
 namespace ast
 {
-    template<typename char_t> union node_t;
+    template<typename CharType> union Node;
 
     /************************************************************************
     * NIL
     ***********************************************************************/
 
-    template<typename char_t>
-    struct traits<node_t<char_t>, NIL>
+    template<typename CharType>
+    struct Traits<Node<CharType>, NIL>
     {
     public:
-        static const tag_t TAG = NIL;
+        static const Tag TAG = NIL;
 
     public:
-        typedef node_t<char_t> node_t;
+        typedef Node<CharType> Node;
 
     public:
-        struct layout
+        struct Layout
         {
             uint8_t pad[15];
             uint8_t tag;
         };
 
     public:
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        construct(node_t & node, pool_t & /*pool*/)
+        construct(Node & node, PoolType & /*pool*/)
         {
             node.nil.tag = TAG;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        destruct(node_t & /*node*/, pool_t & /*pool*/)
+        destruct(Node & /*node*/, PoolType & /*pool*/)
         {
             ;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        copy(node_t & lhs, node_t const & /*rhs*/, pool_t & pool)
+        copy(Node & lhs, Node const & /*rhs*/, PoolType & pool)
         {
             construct(lhs, pool);
         }
         static inline
         bool
-        equal(node_t const & /*lhs*/, node_t const & /*rhs*/)
+        equal(Node const & /*lhs*/, Node const & /*rhs*/)
         {
             return true;
         }
@@ -530,20 +530,20 @@ namespace ast
      * I64
      ***********************************************************************/
 
-    template<typename char_t>
-    struct traits<node_t<char_t>, I64>
+    template<typename CharType>
+    struct Traits<Node<CharType>, I64>
     {
     public:
-        static const tag_t TAG = I64;
+        static const Tag TAG = I64;
 
     public:
-        typedef node_t<char_t>     node_t;
+        typedef Node<CharType>     Node;
         typedef int64_t            value_type;
         typedef value_type       & reference;
         typedef value_type const & const_reference;
 
     public:
-        struct layout
+        struct Layout
         {
             int64_t val;
             uint8_t pad[7];
@@ -551,47 +551,47 @@ namespace ast
         };
 
     public:
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        construct(node_t & node, pool_t & /*pool*/)
+        construct(Node & node, PoolType & /*pool*/)
         {
             node.nil.tag = TAG;
             val(node) = value_type();
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        destruct(node_t & node, pool_t & /*pool*/)
+        destruct(Node & node, PoolType & /*pool*/)
         {
             node.nil.tag = NIL;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        copy(node_t & lhs, node_t const & rhs, pool_t & /*pool*/)
+        copy(Node & lhs, Node const & rhs, PoolType & /*pool*/)
         {
             val(lhs) = val(rhs);
             lhs.nil.tag = TAG;
         }
         static inline
         bool
-        equal(node_t const & lhs, node_t const & rhs)
+        equal(Node const & lhs, Node const & rhs)
         {
             return (val(lhs) == val(rhs));
         }
         static inline
         const_reference
-        val(node_t const & node)
+        val(Node const & node)
         {
             return node.i64.val;
         }
         static inline
         reference
-        val(node_t & node)
+        val(Node & node)
         {
             return const_cast<reference>
-                (val(static_cast<node_t const &>(node)));
+                (val(static_cast<Node const &>(node)));
         }
     };
 
@@ -599,20 +599,20 @@ namespace ast
      * DBL
      ***********************************************************************/
 
-    template<typename char_t>
-    struct traits<node_t<char_t>, DBL>
+    template<typename CharType>
+    struct Traits<Node<CharType>, DBL>
     {
     public:
-        static const tag_t TAG = DBL;
+        static const Tag TAG = DBL;
 
     public:
-        typedef node_t<char_t>     node_t;
+        typedef Node<CharType>     Node;
         typedef double             value_type;
         typedef value_type       & reference;
         typedef value_type const & const_reference;
 
     public:
-        struct layout
+        struct Layout
         {
             double  val;
             uint8_t pad[7];
@@ -620,47 +620,47 @@ namespace ast
         };
 
     public:
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        construct(node_t & node, pool_t & /*pool*/)
+        construct(Node & node, PoolType & /*pool*/)
         {
             node.nil.tag = TAG;
             val(node) = value_type();
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        destruct(node_t & node, pool_t & /*pool*/)
+        destruct(Node & node, PoolType & /*pool*/)
         {
             node.nil.tag = NIL;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        copy(node_t & lhs, node_t const & rhs, pool_t & /*pool*/)
+        copy(Node & lhs, Node const & rhs, PoolType & /*pool*/)
         {
             val(lhs) = val(rhs);
             lhs.nil.tag = TAG;
         }
         static inline
         bool
-        equal(node_t const & lhs, node_t const & rhs)
+        equal(Node const & lhs, Node const & rhs)
         {
             return (val(lhs) == val(rhs));
         }
         static inline
         const_reference
-        val(node_t const & node)
+        val(Node const & node)
         {
             return node.dbl.val;
         }
         static inline
         reference
-        val(node_t & node)
+        val(Node & node)
         {
             return const_cast<reference>
-                (val(static_cast<node_t const &>(node)));
+                (val(static_cast<Node const &>(node)));
         }
     };
 
@@ -668,19 +668,19 @@ namespace ast
      * STR
      ***********************************************************************/
 
-    template<typename char_t>
-    struct traits<node_t<char_t>, STR>
+    template<typename CharType>
+    struct Traits<Node<CharType>, STR>
     {
     public:
-        static const tag_t TAG = STR;
+        static const Tag TAG = STR;
 
     public:
-        typedef node_t<char_t>             node_t;
-        typedef typename node_t::size_type size_type;
+        typedef Node<CharType>           Node;
+        typedef typename Node::size_type size_type;
 
-        struct container
+        struct Container
         {
-            typedef char_t             value_type;
+            typedef CharType           value_type;
             typedef value_type       *       pointer;
             typedef value_type const * const_pointer;
             typedef value_type       &       reference;
@@ -692,27 +692,27 @@ namespace ast
             typedef size_type          index_type;
             typedef void               void_type;
 
-            template<typename pool_t>
+            template<typename PoolType>
             static inline void copy
-            (reference lhs, const_reference rhs, pool_t & /*pool*/)
+            (reference lhs, const_reference rhs, PoolType & /*pool*/)
             {
                 lhs = rhs;
             }
-            template<typename pool_t>
+            template<typename PoolType>
             static inline void move
-            (reference lhs, reference rhs, pool_t & /*pool*/)
+            (reference lhs, reference rhs, PoolType & /*pool*/)
             {
                 lhs = rhs;
             }
         };
 
     public:
-        union layout
+        union Layout
         {
-            /* short string */
+            /* small string */
             union
             {
-                char_t raw[14 / sizeof(char_t)];
+                CharType raw[14 / sizeof(CharType)];
                 struct
                 {
                     uint8_t pad[14];
@@ -726,8 +726,8 @@ namespace ast
             {
                 union
                 {
-                    char_t * ptr;
-                    uint64_t pad;
+                    CharType * ptr;
+                    uint64_t   pad;
                 }        raw;
                 uint32_t siz;
                 uint8_t  exp;
@@ -737,61 +737,60 @@ namespace ast
         };
 
     private:
-
         static const uint8_t LONG = uint8_t(~uint8_t());
 
     private:
         static inline
         bool
-        is_shortstring(node_t const & node)
+        is_smallstring(Node const & node)
         {
             return node.str.sht.ext.siz != LONG;
         }
         static inline
         void
-        update(node_t & node, size_type siz)
+        update(Node & node, size_type siz)
         {
-            if (is_shortstring(node))
+            if (is_smallstring(node))
                 node.str.sht.ext.siz = static_cast<uint8_t>(siz);
             else
                 node.str.lng    .siz = siz;
         }
 
     public:
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        construct(node_t & node, pool_t & /*pool*/)
+        construct(Node & node, PoolType & /*pool*/)
         {
             node.nil.tag = TAG;
             /* '\0' at end */
-            node.str.sht.raw [0] = char_t();
+            node.str.sht.raw [0] = CharType();
             node.str.sht.ext.siz = 1;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        destruct(node_t & node, pool_t & pool)
+        destruct(Node & node, PoolType & pool)
         {
-            typedef typename container::pointer pointer;
-            if (is_shortstring(node) == false) {
+            typedef typename Container::pointer pointer;
+            if (is_smallstring(node) == false) {
                 pointer   mem = raw(node);
                 size_type cap = capacity(node) + size_type(1);
                 pool.deallocate(mem, cap);
             }
             node.nil.tag = NIL;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        copy(node_t & lhs, node_t const & rhs, pool_t & pool)
+        copy(Node & lhs, Node const & rhs, PoolType & pool)
         {
             size_type siz = size(rhs);
             reserve(lhs, siz, pool);
             siz += 1; /* '\0' at end */
 
             {   /* copy data */
-                typedef typename container::value_type value_type;
+                typedef typename Container::value_type value_type;
                 size_type mem_siz = siz * sizeof(value_type);
                 ::memcpy(raw(lhs), raw(rhs), mem_siz);
             }
@@ -802,21 +801,21 @@ namespace ast
         }
         static inline
         bool
-        equal(node_t const & lhs, node_t const & rhs)
+        equal(Node const & lhs, Node const & rhs)
         {
             if (size(lhs) != size(rhs))
                 return false;
 
-            typedef typename container::value_type value_type;
+            typedef typename Container::value_type value_type;
             size_type mem_siz = (size(lhs) + 1) * sizeof(value_type);
             return (::memcmp(raw(lhs), raw(rhs), mem_siz) == 0);
         }
         static inline
         size_type
-        size(node_t const & node)
+        size(Node const & node)
         {
             return static_cast<size_type>
-                ( is_shortstring(node)
+                ( is_smallstring(node)
                 ? node.str.sht.ext.siz
                 : node.str.lng.siz
                 )
@@ -826,49 +825,49 @@ namespace ast
         }
         static inline
         size_type
-        capacity(node_t const & node)
+        capacity(Node const & node)
         {
             return static_cast<size_type>
-                ( is_shortstring(node)
-                ? (14 / sizeof(char_t))
-                : node_t::cap::at(node.str.lng.exp)
+                ( is_smallstring(node)
+                ? (14 / sizeof(CharType))
+                : Node::Cap::at(node.str.lng.exp)
                 )
                 -
                 size_type(1) /* '\0' NOT included */
                 ;
         }
         static inline
-        typename container::const_pointer
-        raw(node_t const & node)
+        typename Container::const_pointer
+        raw(Node const & node)
         {
-            return static_cast<typename container::const_pointer>
-                ( is_shortstring(node)
+            return static_cast<typename Container::const_pointer>
+                ( is_smallstring(node)
                 ? node.str.sht.raw
                 : node.str.lng.raw.ptr
                 )
                 ;
         }
         static inline
-        typename container::pointer
-        raw(node_t & node)
+        typename Container::pointer
+        raw(Node & node)
         {
-            return const_cast<typename container::pointer>
-                (raw(static_cast<node_t const &>(node)));
+            return const_cast<typename Container::pointer>
+                (raw(static_cast<Node const &>(node)));
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        reserve(node_t & node, size_type cap, pool_t & pool)
+        reserve(Node & node, size_type cap, PoolType & pool)
         {
             if (cap <= capacity(node))
                 return;
 
-            typedef typename container::value_type value_type;
-            typedef typename container::pointer    pointer;
+            typedef typename Container::value_type value_type;
+            typedef typename Container::pointer    pointer;
 
             /* alloc new space */
-            uint8_t   exp = node_t::cap::right(cap + 1); /* '\0' at end */
-                      cap = node_t::cap::at(exp);
+            uint8_t   exp = Node::Cap::right(cap + 1); /* '\0' at end */
+                      cap = Node::Cap::at(exp);
             pointer   mem = pool.template allocate<value_type>(cap);
             pointer   old =  raw(node);
             size_type siz = size(node) + 1;
@@ -878,7 +877,7 @@ namespace ast
             ::memcpy(mem, old, mem_siz);
 
             /* release old space */
-            if (is_shortstring(node) == false)
+            if (is_smallstring(node) == false)
                 pool.deallocate(old, capacity(node) + size_type(1));
 
             /* update */
@@ -887,12 +886,12 @@ namespace ast
             node.str.lng.exp     = exp;
             node.str.lng.raw.ptr = mem;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        resize(node_t & node, size_type siz, pool_t & pool)
+        resize(Node & node, size_type siz, PoolType & pool)
         {
-            typedef typename container::pointer pointer;
+            typedef typename Container::pointer pointer;
 
             reserve(node, siz, pool);
 
@@ -901,11 +900,11 @@ namespace ast
 
             /* construct */
             for (pointer cur = beg; cur <= end; ++cur)
-                (*cur) = typename container::value_type();
+                (*cur) = typename Container::value_type();
 
             /*  destruct */
             for (pointer cur = end; cur <  beg; ++cur)
-                (*cur) = typename container::value_type();
+                (*cur) = typename Container::value_type();
 
             /* update */
             siz += 1; /* '\0' at end */
@@ -917,19 +916,19 @@ namespace ast
      * SEQ
      ***********************************************************************/
 
-    template<typename char_t>
-    struct traits<node_t<char_t>, SEQ>
+    template<typename CharType>
+    struct Traits<Node<CharType>, SEQ>
     {
     public:
-        static const tag_t TAG = SEQ;
+        static const Tag TAG = SEQ;
 
     public:
-        typedef node_t<char_t>             node_t;
-        typedef typename node_t::size_type size_type;
+        typedef Node<CharType>           Node;
+        typedef typename Node::size_type size_type;
 
-        struct container
+        struct Container
         {
-            typedef node_t             value_type;
+            typedef Node               value_type;
             typedef value_type       *       pointer;
             typedef value_type const * const_pointer;
             typedef value_type       &       reference;
@@ -941,27 +940,26 @@ namespace ast
             typedef size_type          index_type;
             typedef void               void_type;
 
-            template<typename pool_t>
+            template<typename PoolType>
             static inline void copy
-            (reference lhs, const_reference rhs, pool_t & pool)
+            (reference lhs, const_reference rhs, PoolType & pool)
             {
                 lhs.copy(rhs, pool);
             }
-            template<typename pool_t>
+            template<typename PoolType>
             static inline void move
-            (reference lhs, reference rhs, pool_t & pool)
+            (reference lhs, reference rhs, PoolType & pool)
             {
                 lhs.move(rhs, pool);
             }
         };
 
     public:
-
-        struct layout
+        struct Layout
         {
             union
             {
-                typename container::pointer ptr;
+                typename Container::pointer ptr;
                 uint64_t                    pad;
             }        raw;
             uint32_t siz;
@@ -971,22 +969,22 @@ namespace ast
         };
 
     public:
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        construct(node_t & node, pool_t & /*pool*/)
+        construct(Node & node, PoolType & /*pool*/)
         {
             node.seq.raw.ptr = NULL;
             node.seq.siz = 0;
             node.seq.exp = 0;
             node.nil.tag = TAG;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        destruct(node_t & node, pool_t & pool)
+        destruct(Node & node, PoolType & pool)
         {
-            typedef typename container::pointer pointer;
+            typedef typename Container::pointer pointer;
 
             pointer beg = raw(node);
             pointer end = beg + size(node);
@@ -998,13 +996,13 @@ namespace ast
 
             node.nil.tag = NIL;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        copy(node_t & lhs, node_t const & rhs, pool_t & pool)
+        copy(Node & lhs, Node const & rhs, PoolType & pool)
         {
-            typedef typename container::      pointer       pointer;
-            typedef typename container::const_pointer const_pointer;
+            typedef typename Container::      pointer       pointer;
+            typedef typename Container::const_pointer const_pointer;
 
             size_type siz = size(rhs);
             destruct (lhs, pool);
@@ -1026,12 +1024,12 @@ namespace ast
         }
         static inline
         bool
-        equal(node_t const & lhs, node_t const & rhs)
+        equal(Node const & lhs, Node const & rhs)
         {
             if (size(lhs) != size(rhs))
                 return false;
 
-            typedef typename container::const_pointer const_pointer;
+            typedef typename Container::const_pointer const_pointer;
             const_pointer ilhs = raw(lhs);
             const_pointer irhs = raw(rhs);
             const_pointer iend = irhs + size(rhs);
@@ -1046,43 +1044,43 @@ namespace ast
         }
         static inline
         size_type
-        size(node_t const & node)
+        size(Node const & node)
         {
             return static_cast<size_type>(node.seq.siz);
         }
         static inline
         size_type
-        capacity(node_t const & node)
+        capacity(Node const & node)
         {
-            return static_cast<size_type>(node_t::cap::at(node.seq.exp));
+            return static_cast<size_type>(Node::Cap::at(node.seq.exp));
         }
         static inline
-        typename container::const_pointer
-        raw(node_t const & node)
+        typename Container::const_pointer
+        raw(Node const & node)
         {
             return node.seq.raw.ptr;
         }
         static inline
-        typename container::pointer
-        raw(node_t & node)
+        typename Container::pointer
+        raw(Node & node)
         {
-            return const_cast<typename container::pointer>
-                (raw(static_cast<node_t const &>(node)));
+            return const_cast<typename Container::pointer>
+                (raw(static_cast<Node const &>(node)));
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        reserve(node_t & node, size_type cap, pool_t & pool)
+        reserve(Node & node, size_type cap, PoolType & pool)
         {
             if (cap <= capacity(node))
                 return;
 
-            typedef typename container::value_type value_type;
-            typedef typename container::pointer    pointer;
+            typedef typename Container::value_type value_type;
+            typedef typename Container::pointer    pointer;
 
             /* alloc new space */
-            uint8_t exp = node_t::cap::right(cap);
-                    cap = node_t::cap::at(exp);
+            uint8_t exp = Node::Cap::right(cap);
+                    cap = Node::Cap::at(exp);
             pointer mem = pool.template allocate<value_type>(cap);
 
             /* move */
@@ -1103,12 +1101,12 @@ namespace ast
             node.seq.exp     = exp;
             node.seq.raw.ptr = mem;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        resize(node_t & node, size_type siz, pool_t & pool)
+        resize(Node & node, size_type siz, PoolType & pool)
         {
-            typedef typename container::pointer pointer;
+            typedef typename Container::pointer pointer;
 
             reserve(node, siz, pool);
 
@@ -1129,20 +1127,20 @@ namespace ast
      * MAP
      ***********************************************************************/
 
-    template<typename char_t>
-    struct traits<node_t<char_t>, MAP>
+    template<typename CharType>
+    struct Traits<Node<CharType>, MAP>
     {
     public:
-        static const tag_t TAG = MAP;
+        static const Tag TAG = MAP;
 
     public:
-        typedef node_t<char_t>             node_t;
-        typedef typename node_t::pair_t    pair_t;
-        typedef typename node_t::size_type size_type;
+        typedef Node<CharType>           Node;
+        typedef typename Node::Pair      Pair;
+        typedef typename Node::size_type size_type;
 
-        struct container
+        struct Container
         {
-            typedef pair_t             value_type;
+            typedef Pair               value_type;
             typedef value_type       * pointer;
             typedef value_type const * const_pointer;
             typedef value_type       & reference;
@@ -1151,20 +1149,20 @@ namespace ast
             typedef const_pointer              const_iterator;
             typedef       pointer            reverse_iterator; /* TODO: */
             typedef const_pointer      const_reverse_iterator; /* TODO: */
-            typedef node_t     const & key_const_reference;
+            typedef Node     const &   key_const_reference;
             typedef size_type          index_type;
             typedef void               void_type;
 
-            template<typename pool_t>
+            template<typename PoolType>
             static inline void copy
-            (reference lhs, const_reference rhs, pool_t & pool)
+            (reference lhs, const_reference rhs, PoolType & pool)
             {
                 lhs[0].copy(rhs[0], pool);
                 lhs[1].copy(rhs[1], pool);
             }
-            template<typename pool_t>
+            template<typename PoolType>
             static inline void move
-            (reference lhs, reference rhs, pool_t & pool)
+            (reference lhs, reference rhs, PoolType & pool)
             {
                 lhs[0].move(rhs[0], pool);
                 lhs[1].move(rhs[1], pool);
@@ -1177,11 +1175,11 @@ namespace ast
         };
 
     public:
-        struct layout
+        struct Layout
         {
             union
             {
-                typename container::pointer ptr;
+                typename Container::pointer ptr;
                 uint64_t                    pad;
             }        raw;
             uint32_t siz;
@@ -1191,22 +1189,22 @@ namespace ast
         };
 
     public:
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        construct(node_t & node, pool_t & /*pool*/)
+        construct(Node & node, PoolType & /*pool*/)
         {
             node.map.raw.ptr = NULL;
             node.map.siz = 0;
             node.map.exp = 0;
             node.nil.tag = TAG;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        destruct(node_t & node, pool_t & pool)
+        destruct(Node & node, PoolType & pool)
         {
-            typedef typename container::pointer pointer;
+            typedef typename Container::pointer pointer;
 
             pointer beg = raw(node);
             pointer end = beg + size(node);
@@ -1216,20 +1214,20 @@ namespace ast
             }
 
             if (beg != NULL) {
-                node_t *  mem = reinterpret_cast<node_t *>(beg);
+                Node *  mem = reinterpret_cast<Node *>(beg);
                 size_type siz = capacity(node) << 1;
                 pool.deallocate(mem, siz);
             }
 
             node.nil.tag = NIL;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        copy(node_t & lhs, node_t const & rhs, pool_t & pool)
+        copy(Node & lhs, Node const & rhs, PoolType & pool)
         {
-            typedef typename container::      pointer       pointer;
-            typedef typename container::const_pointer const_pointer;
+            typedef typename Container::      pointer       pointer;
+            typedef typename Container::const_pointer const_pointer;
 
             size_type siz = size(rhs);
             destruct (lhs, pool);
@@ -1252,12 +1250,12 @@ namespace ast
         }
         static inline
         bool
-        equal(node_t const & lhs, node_t const & rhs)
+        equal(Node const & lhs, Node const & rhs)
         {
             if (size(lhs) != size(rhs))
                 return false;
 
-            typedef typename container::const_pointer const_pointer;
+            typedef typename Container::const_pointer const_pointer;
             const_pointer dst = raw(lhs);
             const_pointer src = raw(rhs);
             const_pointer end = src + size(rhs);
@@ -1273,44 +1271,44 @@ namespace ast
         }
         static inline
         size_type
-        size(node_t const & node)
+        size(Node const & node)
         {
             return static_cast<size_type>(node.map.siz);
         }
         static inline
         size_type
-        capacity(node_t const & node)
+        capacity(Node const & node)
         {
-            return static_cast<size_type>(node_t::cap::at(node.map.exp));
+            return static_cast<size_type>(Node::Cap::at(node.map.exp));
         }
         static inline
-        typename container::const_pointer
-        raw(node_t const & node)
+        typename Container::const_pointer
+        raw(Node const & node)
         {
             return node.map.raw.ptr;
         }
         static inline
-        typename container::pointer
-        raw(node_t & node)
+        typename Container::pointer
+        raw(Node & node)
         {
-            return const_cast<typename container::pointer>
-                (raw(static_cast<node_t const &>(node)));
+            return const_cast<typename Container::pointer>
+                (raw(static_cast<Node const &>(node)));
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        reserve(node_t & node, size_type cap, pool_t & pool)
+        reserve(Node & node, size_type cap, PoolType & pool)
         {
             if (cap <= capacity(node))
                 return;
 
-            typedef typename container::pointer pointer;
+            typedef typename Container::pointer pointer;
 
             /* alloc new space */
-            uint8_t exp = node_t::cap::right(cap);
-                    cap = node_t::cap::at(exp);
+            uint8_t exp = Node::Cap::right(cap);
+                    cap = Node::Cap::at(exp);
             pointer mem = reinterpret_cast<pointer>(
-                pool.template allocate<node_t>(cap << 1)
+                pool.template allocate<Node>(cap << 1)
             );
 
             /* move */
@@ -1326,7 +1324,7 @@ namespace ast
 
             /* release */
             if (beg != NULL) {
-                node_t *  old = reinterpret_cast<node_t *>(beg);
+                Node *  old = reinterpret_cast<Node *>(beg);
                 size_type siz = capacity(node) << 1;
                 pool.deallocate(old, siz);
             }
@@ -1335,12 +1333,12 @@ namespace ast
             node.map.exp     = exp;
             node.map.raw.ptr = mem;
         }
-        template<typename pool_t>
+        template<typename PoolType>
         static inline
         void
-        resize(node_t & node, size_type siz, pool_t & pool)
+        resize(Node & node, size_type siz, PoolType & pool)
         {
-            typedef typename container::pointer pointer;
+            typedef typename Container::pointer pointer;
 
             reserve(node, siz, pool);
 
@@ -1369,15 +1367,15 @@ namespace ast
      * methods
      ***********************************************************************/
 
-    template<typename char_t> template<typename pool_t>
-    inline void node_t<char_t>::construct(pool_t & pool)
+    template<typename CharType> template<typename PoolType>
+    inline void Node<CharType>::construct(PoolType & pool)
     {
-        traits<node_t, NIL>::construct(*this, pool);
+        Traits<Node, NIL>::construct(*this, pool);
     }
 
-    template<typename char_t> template<typename pool_t>
-    inline void node_t<char_t>::
-    construct(tag_t tag, pool_t & pool)
+    template<typename CharType> template<typename PoolType>
+    inline void Node<CharType>::
+    construct(Tag tag, PoolType & pool)
     {
         switch (tag)
         {
@@ -1391,9 +1389,9 @@ namespace ast
         }
     }
 
-    template<typename char_t> template<typename pool_t>
-    inline void node_t<char_t>::
-    destruct(pool_t & pool)
+    template<typename CharType> template<typename PoolType>
+    inline void Node<CharType>::
+    destruct(PoolType & pool)
     {
         /* mark this as NIL(no need to destruct)
          * to prevent potential infinite recursion.
@@ -1404,37 +1402,37 @@ namespace ast
         switch (tag)
         {
         case NIL: { break; }
-        case I64: { traits<node_t, I64>::destruct(*this, pool); break; }
-        case DBL: { traits<node_t, DBL>::destruct(*this, pool); break; }
-        case STR: { traits<node_t, STR>::destruct(*this, pool); break; }
-        case SEQ: { traits<node_t, SEQ>::destruct(*this, pool); break; }
-        case MAP: { traits<node_t, MAP>::destruct(*this, pool); break; }
+        case I64: { Traits<Node, I64>::destruct(*this, pool); break; }
+        case DBL: { Traits<Node, DBL>::destruct(*this, pool); break; }
+        case STR: { Traits<Node, STR>::destruct(*this, pool); break; }
+        case SEQ: { Traits<Node, SEQ>::destruct(*this, pool); break; }
+        case MAP: { Traits<Node, MAP>::destruct(*this, pool); break; }
         default:  { exception::node_type_out_of_range(tag, POS_); break; }
         }
     }
 
-    template<typename char_t> template<typename pool_t>
-    inline void node_t<char_t>::
-    copy(node_t const & rhs, pool_t & pool)
+    template<typename CharType> template<typename PoolType>
+    inline void Node<CharType>::
+    copy(Node const & rhs, PoolType & pool)
     {
-        node_t & lhs = *this;
+        Node & lhs = *this;
         if (&lhs == &rhs)
             return;
 
         if (lhs.type() == NIL)
         {
-            tag_t tag = rhs.type();
+            Tag tag = rhs.type();
             lhs.construct(tag, pool);
 
             /* copy data */
             switch (tag)
             {
             case NIL: { break; }
-            case I64: { traits<node_t, I64>::copy(lhs, rhs, pool); break; }
-            case DBL: { traits<node_t, DBL>::copy(lhs, rhs, pool); break; }
-            case STR: { traits<node_t, STR>::copy(lhs, rhs, pool); break; }
-            case SEQ: { traits<node_t, SEQ>::copy(lhs, rhs, pool); break; }
-            case MAP: { traits<node_t, MAP>::copy(lhs, rhs, pool); break; }
+            case I64: { Traits<Node, I64>::copy(lhs, rhs, pool); break; }
+            case DBL: { Traits<Node, DBL>::copy(lhs, rhs, pool); break; }
+            case STR: { Traits<Node, STR>::copy(lhs, rhs, pool); break; }
+            case SEQ: { Traits<Node, SEQ>::copy(lhs, rhs, pool); break; }
+            case MAP: { Traits<Node, MAP>::copy(lhs, rhs, pool); break; }
             default:  { exception::node_type_out_of_range(tag,POS_); break; }
             }
         }
@@ -1445,7 +1443,7 @@ namespace ast
              */
 
             /* tmp = rhs */
-            node_t tmp;
+            Node tmp;
             tmp.construct(pool);
             tmp.copy(rhs, pool);
 
@@ -1456,24 +1454,24 @@ namespace ast
         }
     }
 
-    template<typename char_t> template<typename pool_t>
-    inline void node_t<char_t>::
-    move(node_t & rhs, pool_t & pool)
+    template<typename CharType> template<typename PoolType>
+    inline void Node<CharType>::
+    move(Node & rhs, PoolType & pool)
     {
-        node_t & lhs = *this;
+        Node & lhs = *this;
         if (&lhs == &rhs)
             return;
 
         if (lhs.type() == NIL) {
-            ::memcpy(&lhs, &rhs, sizeof(node_t));
-            ::memset(&rhs,    0, sizeof(node_t));
+            ::memcpy(&lhs, &rhs, sizeof(Node));
+            ::memset(&rhs,    0, sizeof(Node));
         } else {
             /* there may be parent-child relationship between lhs and rhs,
              * using a tmp node to avoid rhs destructed before copy starting.
              */
 
             /* tmp = move(rhs), separated form this */
-            node_t tmp;
+            Node tmp;
             tmp.construct(pool);
             tmp.move(rhs, pool);
 
@@ -1484,209 +1482,209 @@ namespace ast
         }
     }
 
-    template<typename char_t>
-    inline void node_t<char_t>::
-    swap(node_t & rhs)
+    template<typename CharType>
+    inline void Node<CharType>::
+    swap(Node & rhs)
     {
-        node_t & lhs = *this;
-        node_t   tmp;
+        Node & lhs = *this;
+        Node   tmp;
 
-        ::memcpy(&tmp, &rhs, sizeof(node_t));
-        ::memcpy(&rhs, &lhs, sizeof(node_t));
-        ::memcpy(&lhs, &tmp, sizeof(node_t));
-        ::memset(&tmp,    0, sizeof(node_t));
+        ::memcpy(&tmp, &rhs, sizeof(Node));
+        ::memcpy(&rhs, &lhs, sizeof(Node));
+        ::memcpy(&lhs, &tmp, sizeof(Node));
+        ::memset(&tmp,    0, sizeof(Node));
     }
 
-    template<typename char_t>
-    inline bool node_t<char_t>::
-    equal(node_t const & rhs) const
+    template<typename CharType>
+    inline bool Node<CharType>::
+    equal(Node const & rhs) const
     {
-        node_t const & lhs = *this;
+        Node const & lhs = *this;
 
         if (&lhs == &rhs)
             return true;
         if (lhs.type() != rhs.type())
             return false;
 
-        tag_t tag = lhs.type();
+        Tag tag = lhs.type();
         switch (tag)
         {
-        case NIL: { return traits<node_t, NIL>::equal(lhs, rhs); break; }
-        case I64: { return traits<node_t, I64>::equal(lhs, rhs); break; }
-        case DBL: { return traits<node_t, DBL>::equal(lhs, rhs); break; }
-        case STR: { return traits<node_t, STR>::equal(lhs, rhs); break; }
-        case SEQ: { return traits<node_t, SEQ>::equal(lhs, rhs); break; }
-        case MAP: { return traits<node_t, MAP>::equal(lhs, rhs); break; }
+        case NIL: { return Traits<Node, NIL>::equal(lhs, rhs); break; }
+        case I64: { return Traits<Node, I64>::equal(lhs, rhs); break; }
+        case DBL: { return Traits<Node, DBL>::equal(lhs, rhs); break; }
+        case STR: { return Traits<Node, STR>::equal(lhs, rhs); break; }
+        case SEQ: { return Traits<Node, SEQ>::equal(lhs, rhs); break; }
+        case MAP: { return Traits<Node, MAP>::equal(lhs, rhs); break; }
         default:  { exception::node_type_out_of_range(tag,POS_); break; }
         }
 
         return false;
     }
 
-    template<typename char_t>
-    inline tag_t node_t<char_t>::
+    template<typename CharType>
+    inline Tag Node<CharType>::
     type() const
     {
-        return static_cast<tag_t>(nil.tag);
+        return static_cast<Tag>(nil.tag);
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline void node_t<char_t>::
-    construct(pool_t & pool)
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline void Node<CharType>::
+    construct(PoolType & pool)
     {
-        traits<node_t, TAG>::construct(*this, pool);
+        Traits<Node, TAG>::construct(*this, pool);
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline void node_t<char_t>::
-    set(typename traits<node_t, TAG>::const_reference value, pool_t & pool)
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline void Node<CharType>::
+    set(typename Traits<Node, TAG>::const_reference value, PoolType & pool)
     {
         destruct      (pool);
         construct<TAG>(pool);
-        traits<node_t, TAG>::val(*this) = value;
+        Traits<Node, TAG>::val(*this) = value;
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline void node_t<char_t>::
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline void Node<CharType>::
     set
     (
-        typename traits<node_t, TAG>::container::const_iterator ibeg,
-        typename traits<node_t, TAG>::container::const_iterator iend,
-        pool_t & pool
+        typename Traits<Node, TAG>::Container::const_iterator ibeg,
+        typename Traits<Node, TAG>::Container::const_iterator iend,
+        PoolType & pool
     )
     {
         destruct      (pool);
         construct<TAG>(pool);
 
-        typedef traits<node_t, TAG>                traits;
-        typedef typename traits::container         container;
-        typedef typename container::      iterator       iterator;
-        typedef typename container::const_iterator const_iterator;
+        typedef Traits<Node, TAG>                Traits;
+        typedef typename Traits::Container         Container;
+        typedef typename Container::      iterator       iterator;
+        typedef typename Container::const_iterator const_iterator;
 
         size_type len = static_cast<size_type>(iend - ibeg);
-        traits::resize(*this, len, pool);
+        Traits::resize(*this, len, pool);
 
               iterator ilhs = begin<TAG>();
         const_iterator irhs = ibeg;
         while (irhs != iend) {
-            container::copy((*ilhs), (*irhs), pool);
+            Container::copy((*ilhs), (*irhs), pool);
             ++ilhs;
             ++irhs;
         }
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::const_reference
-    node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::const_reference
+    Node<CharType>::
     val() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
-        return traits<node_t, TAG>::val(*this);
+        return Traits<Node, TAG>::val(*this);
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::reference
-    node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::reference
+    Node<CharType>::
     val()
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
-        return traits<node_t, TAG>::val(*this);
+        return Traits<Node, TAG>::val(*this);
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::size_type
-    node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::size_type
+    Node<CharType>::
     size() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
-        return traits<node_t, TAG>::size(*this);
+        return Traits<Node, TAG>::size(*this);
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::size_type
-    node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::size_type
+    Node<CharType>::
     capacity() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
-        return traits<node_t, TAG>::capacity(*this);
+        return Traits<Node, TAG>::capacity(*this);
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    const_pointer node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    const_pointer Node<CharType>::
     raw() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
-        return traits<node_t, TAG>::raw(*this);
+        return Traits<Node, TAG>::raw(*this);
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    void_type node_t<char_t>::
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    void_type Node<CharType>::
     push_back
     (
-        typename traits<node_t, TAG>::container::const_reference value,
-        pool_t & pool
+        typename Traits<Node, TAG>::Container::const_reference value,
+        PoolType & pool
     )
     {
-        typedef traits<node_t, TAG>                   traits;
-        typedef typename traits::size_type            size_type;
-        typedef typename traits::container::reference reference;
+        typedef Traits<Node, TAG>                   Traits;
+        typedef typename Traits::size_type            size_type;
+        typedef typename Traits::Container::reference reference;
 
         if (type() == NIL)
-            traits::construct(*this, pool);
+            Traits::construct(*this, pool);
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        size_type siz = traits::size(*this);
-        traits::resize(*this, siz + 1, pool);
+        size_type siz = Traits::size(*this);
+        Traits::resize(*this, siz + 1, pool);
 
-        reference bak = traits::raw(*this)[siz];
-        traits::container::copy(bak, value, pool);
+        reference bak = Traits::raw(*this)[siz];
+        Traits::Container::copy(bak, value, pool);
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    void_type node_t<char_t>::
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    void_type Node<CharType>::
     move_back
     (
-        typename traits<node_t, TAG>::container::reference value,
-        pool_t & pool
+        typename Traits<Node, TAG>::Container::reference value,
+        PoolType & pool
     )
     {
-        typedef traits<node_t, TAG>                   traits;
-        typedef typename traits::size_type            size_type;
-        typedef typename traits::container::reference reference;
+        typedef Traits<Node, TAG>                   Traits;
+        typedef typename Traits::size_type            size_type;
+        typedef typename Traits::Container::reference reference;
 
         if (type() == NIL)
-            traits::construct(*this, pool);
+            Traits::construct(*this, pool);
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        size_type siz = traits::size(*this);
-        traits::resize(*this, siz + 1, pool);
+        size_type siz = Traits::size(*this);
+        Traits::resize(*this, siz + 1, pool);
 
-        reference bak = traits::raw(*this)[siz];
-        traits::container::move(bak, value, pool);
+        reference bak = Traits::raw(*this)[siz];
+        Traits::Container::move(bak, value, pool);
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    iterator Node<CharType>::
     erase
     (
-        typename traits<node_t, TAG>::container::const_iterator citer,
-        pool_t & pool
+        typename Traits<Node, TAG>::Container::const_iterator citer,
+        PoolType & pool
     )
     {
-        typedef traits<node_t, TAG>          traits;
-        typedef typename traits::container   container;
-        typedef typename container::iterator iterator;
+        typedef Traits<Node, TAG>          Traits;
+        typedef typename Traits::Container   Container;
+        typedef typename Container::iterator iterator;
 
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
@@ -1699,25 +1697,25 @@ namespace ast
             return iend;
 
         while (++iter != iend)
-            traits::container::move((*(iter - 1)), (*iter), pool);
+            Traits::Container::move((*(iter - 1)), (*iter), pool);
 
-        traits::resize(*this, traits::size(*this) - 1, pool);
+        Traits::resize(*this, Traits::size(*this) - 1, pool);
         return ipos;
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    iterator Node<CharType>::
     erase
     (
-        typename traits<node_t, TAG>::container::const_iterator cifst,
-        typename traits<node_t, TAG>::container::const_iterator cilst,
-        pool_t & pool
+        typename Traits<Node, TAG>::Container::const_iterator cifst,
+        typename Traits<Node, TAG>::Container::const_iterator cilst,
+        PoolType & pool
     )
     {
-        typedef traits<node_t, TAG>          traits;
-        typedef typename traits::container   container;
-        typedef typename container::iterator iterator;
+        typedef Traits<Node, TAG>          Traits;
+        typedef typename Traits::Container   Container;
+        typedef typename Container::iterator iterator;
 
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
@@ -1738,189 +1736,189 @@ namespace ast
 
         iterator ipos = ifst;
         size_type siz
-            = traits::size(*this)
+            = Traits::size(*this)
             - static_cast<size_type>(ilst - ifst)
             ;
 
         while (ilst != iend) {
-            traits::container::move((*ifst), (*ilst), pool);
+            Traits::Container::move((*ifst), (*ilst), pool);
             ++ifst;
             ++ilst;
         }
 
-        traits::resize(*this, siz, pool);
+        Traits::resize(*this, siz, pool);
         return ipos;
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    void_type node_t<char_t>::
-    pop_back(pool_t & pool)
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    void_type Node<CharType>::
+    pop_back(PoolType & pool)
     {
-        typedef traits<node_t, TAG>        traits;
-        typedef typename traits::size_type size_type;
+        typedef Traits<Node, TAG>        Traits;
+        typedef typename Traits::size_type size_type;
 
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        size_type siz = traits::size(*this);
+        size_type siz = Traits::size(*this);
         if (siz > 0)
-            traits::resize(*this, siz - 1, pool);
+            Traits::resize(*this, siz - 1, pool);
     }
 
-    template<typename char_t> template<tag_t TAG, typename pool_t>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    void_type node_t<char_t>::
-    clear(pool_t & pool)
+    template<typename CharType> template<Tag TAG, typename PoolType>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    void_type Node<CharType>::
+    clear(PoolType & pool)
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        traits<node_t, TAG>::resize(*this, 0, pool);
+        Traits<Node, TAG>::resize(*this, 0, pool);
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    const_iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    const_iterator Node<CharType>::
     begin() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        return traits<node_t, TAG>::raw(*this);
+        return Traits<Node, TAG>::raw(*this);
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::iterator
-    node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::iterator
+    Node<CharType>::
     begin()
     {
-        return const_cast<typename traits<node_t, TAG>::container::iterator>
-            (static_cast<node_t const &>(*this).begin<TAG>());
+        return const_cast<typename Traits<Node, TAG>::Container::iterator>
+            (static_cast<Node const &>(*this).begin<TAG>());
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    const_iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    const_iterator Node<CharType>::
     end() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        return traits<node_t, TAG>::raw (*this)
-            +  traits<node_t, TAG>::size(*this)
+        return Traits<Node, TAG>::raw (*this)
+            +  Traits<Node, TAG>::size(*this)
             ;
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::iterator
-    node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::iterator
+    Node<CharType>::
     end()
     {
-        return const_cast<typename traits<node_t, TAG>::container::iterator>
-            (static_cast<node_t const &>(*this).end<TAG>());
+        return const_cast<typename Traits<Node, TAG>::Container::iterator>
+            (static_cast<Node const &>(*this).end<TAG>());
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    const_reverse_iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    const_reverse_iterator Node<CharType>::
     rbegin() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        return traits<node_t, TAG>::raw (*this)
-            +  traits<node_t, TAG>::size(*this)
+        return Traits<Node, TAG>::raw (*this)
+            +  Traits<Node, TAG>::size(*this)
             -  1
             ;
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    reverse_iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    reverse_iterator Node<CharType>::
     rbegin()
     {
         return const_cast
-            <typename traits<node_t, TAG>::container::reverse_iterator>
-            (static_cast<node_t const &>(*this).rbegin<TAG>());
+            <typename Traits<Node, TAG>::Container::reverse_iterator>
+            (static_cast<Node const &>(*this).rbegin<TAG>());
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    const_reverse_iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    const_reverse_iterator Node<CharType>::
     rend() const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        return traits<node_t, TAG>::raw(*this)
+        return Traits<Node, TAG>::raw(*this)
             -  1
             ;
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    reverse_iterator node_t<char_t>::
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    reverse_iterator Node<CharType>::
     rend()
     {
         return const_cast
-            <typename traits<node_t, TAG>::container::reverse_iterator>
-            (static_cast<node_t const &>(*this).rend<TAG>());
+            <typename Traits<Node, TAG>::Container::reverse_iterator>
+            (static_cast<Node const &>(*this).rend<TAG>());
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    const_iterator node_t<char_t>::
-    at(typename traits<node_t, TAG>::container::index_type idx) const
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    const_iterator Node<CharType>::
+    at(typename Traits<Node, TAG>::Container::index_type idx) const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        if (idx <  traits<node_t, TAG>::size(*this))
-            return traits<node_t, TAG>::raw (*this) + idx;
+        if (idx <  Traits<Node, TAG>::size(*this))
+            return Traits<Node, TAG>::raw (*this) + idx;
 
-        return traits<node_t, TAG>::raw (*this)
-            +  traits<node_t, TAG>::size(*this)
+        return Traits<Node, TAG>::raw (*this)
+            +  Traits<Node, TAG>::size(*this)
             ;
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    iterator node_t<char_t>::
-    at(typename traits<node_t, TAG>::container::index_type idx)
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    iterator Node<CharType>::
+    at(typename Traits<Node, TAG>::Container::index_type idx)
     {
-        return const_cast<typename traits<node_t, TAG>::container::iterator>
-            (static_cast<node_t const &>(*this).at<TAG>(idx));
+        return const_cast<typename Traits<Node, TAG>::Container::iterator>
+            (static_cast<Node const &>(*this).at<TAG>(idx));
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    const_iterator node_t<char_t>::
-    find(typename traits<node_t, TAG>::container::key_const_reference key)
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    const_iterator Node<CharType>::
+    find(typename Traits<Node, TAG>::Container::key_const_reference key)
     const
     {
         if (type() != TAG)
             exception::node_type_not_match(type(), TAG, POS_);
 
-        typedef typename traits<node_t, TAG>::container container;
-        typedef typename container::const_iterator      const_iterator;
+        typedef typename Traits<Node, TAG>::Container Container;
+        typedef typename Container::const_iterator      const_iterator;
 
         const_iterator ibeg = begin<TAG>();
         const_iterator iend = end  <TAG>();
         for (const_iterator iter = ibeg; iter < iend; ++iter)
-            if (container::equal((*iter), key))
+            if (Container::equal((*iter), key))
                 return iter;
 
         return iend;
     }
 
-    template<typename char_t> template<tag_t TAG>
-    inline typename traits<node_t<char_t>, TAG>::container::
-    iterator node_t<char_t>::
-    find(typename traits<node_t, TAG>::container::key_const_reference key)
+    template<typename CharType> template<Tag TAG>
+    inline typename Traits<Node<CharType>, TAG>::Container::
+    iterator Node<CharType>::
+    find(typename Traits<Node, TAG>::Container::key_const_reference key)
     {
-        return const_cast<typename traits<node_t, TAG>::container::iterator>
-            (static_cast<node_t const &>(*this).find<TAG>(key));
+        return const_cast<typename Traits<Node, TAG>::Container::iterator>
+            (static_cast<Node const &>(*this).find<TAG>(key));
     }
 }
 

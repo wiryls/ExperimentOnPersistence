@@ -19,8 +19,8 @@ CV_FS_PRIVATE_BEGIN
 
 namespace parser { namespace json
 {
-    template<typename Char_T> class builder_t;
-    typedef stream_helper_t<stream_t, builder_t<char> > in_t;
+    template<typename CharType> class Builder;
+    typedef StreamHelper<Stream, Builder<char> > In;
 }}
 
 /****************************************************************************
@@ -29,16 +29,16 @@ namespace parser { namespace json
 
 namespace exception
 {
-    using chars::soss_t;
+    using chars::Soss;
     using chars::fmt;
 
     inline static bool opt_error(
-        parser::json::in_t & in,
+        parser::json::In & in,
         char const * option,
         char const * status)
     {
         parser::raise_error(in,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "option `"
                 | fmt<96>(option)
                 | "` is `"
@@ -57,12 +57,12 @@ namespace exception
     }
 
     inline static bool expect(
-        parser::json::in_t & in,
+        parser::json::In & in,
         char const * expected,
         char const * hint)
     {
         parser::raise_error(in,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * "expecting `"
                 | fmt<32>(expected)
                 | "` but got `"
@@ -80,13 +80,13 @@ namespace exception
         return false;
     }
 
-    inline static bool warning(parser::json::in_t & in, char const * message)
+    inline static bool warning(parser::json::In & in, char const * message)
     {
         if (in.get_settings().enable_warning_message == false)
             return true;
 
         parser::raise_warning(in,
-            ( soss_t<char, 256>()
+            ( Soss<char, 256>()
                 * fmt<128>(message)
                 | ", at ("
                 | fmt<32>(in.line())
@@ -106,18 +106,18 @@ namespace exception
 namespace parser { namespace json
 {
     /************************************************************************
-     * declaration builder_t
+     * declaration Builder
      ***********************************************************************/
 
-    template<typename char_t>
-    class builder_t
+    template<typename CharType>
+    class Builder
     {
     public:
-        typedef ast::tree_t<char_t> tree_t;
-        typedef ast::node_t<char_t> node_t;
+        typedef ast::Tree<CharType> Tree;
+        typedef ast::Node<CharType> Node;
 
     public:
-        builder_t(tree_t & tree);
+        Builder(Tree & tree);
 
     public:
         void map_beg();
@@ -136,7 +136,7 @@ namespace parser { namespace json
         void on_nil();
         void on_int(int64_t i);
         void on_dbl(double  d);
-        void on_chr(char_t ch);
+        void on_chr(CharType ch);
 
     public:
 
@@ -150,22 +150,22 @@ namespace parser { namespace json
         };
 
     private:
-        typedef chars::buffer_t<status_t, 128, std::allocator> sstack_t;
-        typedef chars::buffer_t<node_t *, 128, std::allocator> nstack_t;
-        typedef chars::buffer_t<  char_t, 128, std::allocator> buffer_t;
+        typedef chars::Buffer<status_t, 128, std::allocator> sstack_t;
+        typedef chars::Buffer<Node *, 128, std::allocator> nstack_t;
+        typedef chars::Buffer<  CharType, 128, std::allocator> Buffer;
 
-        tree_t    & tree_;
+        Tree    & tree_;
         nstack_t  nstack_;
         sstack_t  sstack_;
-        buffer_t  buffer_;
+        Buffer  buffer_;
     };
 
     /************************************************************************
-     * implementation builder_t
+     * implementation Builder
      ***********************************************************************/
 
-    template<typename char_t> inline builder_t<char_t>::
-        builder_t(tree_t & tree)
+    template<typename CharType> inline Builder<CharType>::
+        Builder(Tree & tree)
         : tree_(tree)
         , nstack_()
         , sstack_()
@@ -174,23 +174,23 @@ namespace parser { namespace json
         nstack_.push_back(&tree_.root());
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         map_beg()
     {
         using namespace ast;
-        node_t & top = *nstack_.back();
+        Node & top = *nstack_.back();
         top.template construct<MAP>(tree_.pool());
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         map_key()
     {
         using namespace ast;
-        typedef typename node_t::pair_t pair_t;
-        pair_t * pair = NULL;
+        typedef typename Node::Pair Pair;
+        Pair * pair = NULL;
         {
-            node_t & top = *nstack_.back();
-            pair_t dummy;
+            Node & top = *nstack_.back();
+            Pair dummy;
             dummy[0].construct(tree_.pool());
             dummy[1].construct(tree_.pool());
             top.template move_back<MAP>(dummy, tree_.pool());
@@ -201,34 +201,34 @@ namespace parser { namespace json
         nstack_.push_back(&((*pair)[0]));
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         map_val()
     {
         ;
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         map_end()
     {
         nstack_.pop_back();
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         seq_beg()
     {
         using namespace ast;
-        node_t & top = *nstack_.back();
+        Node & top = *nstack_.back();
         top.template construct<SEQ>(tree_.pool());
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         seq_val()
     {
         using namespace ast;
-        node_t * node = NULL;
+        Node * node = NULL;
         {
-            node_t & top = *nstack_.back();
-            node_t dummy;
+            Node & top = *nstack_.back();
+            Node dummy;
             dummy.construct(tree_.pool());
             top.template move_back<SEQ>(dummy, tree_.pool());
             node = top.template rbegin<SEQ>();
@@ -236,54 +236,54 @@ namespace parser { namespace json
         nstack_.push_back(node);
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         seq_end()
     {
         nstack_.pop_back();
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         str_beg()
     {
         buffer_.clear();
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         str_end()
     {
         using namespace ast;
-        node_t & top = *nstack_.back();
+        Node & top = *nstack_.back();
         top.template set<STR>(buffer_.begin(), buffer_.end(),tree_.pool());
         buffer_.clear();
         nstack_.pop_back();
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         on_int(int64_t val)
     {
         using namespace ast;
-        node_t & top = *nstack_.back();
+        Node & top = *nstack_.back();
         top.template set<I64>(val, tree_.pool());
         nstack_.pop_back();
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         on_dbl(double val)
     {
         using namespace ast;
-        node_t & top = *nstack_.back();
+        Node & top = *nstack_.back();
         top.template set<DBL>(val, tree_.pool());
         nstack_.pop_back();
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
+    template<typename CharType> inline void Builder<CharType>::
         on_nil()
     {
         nstack_.pop_back();
     }
 
-    template<typename char_t> inline void builder_t<char_t>::
-        on_chr(char_t ch)
+    template<typename CharType> inline void Builder<CharType>::
+        on_chr(CharType ch)
     {
         buffer_.push_back(ch);
     }
@@ -296,10 +296,10 @@ namespace parser { namespace json
 
 namespace parser { namespace json
 {
-    template<typename Char_T> struct keyword_table_t
+    template<typename CharType> struct KeywordTable
     {
-        typedef Char_T char_t;
-        typedef const keyword_t<char_t> value_type;
+        typedef CharType CharType;
+        typedef const Keyword<CharType> value_type;
 
         static value_type COLON;
         static value_type COMMA;
@@ -335,7 +335,7 @@ namespace parser { namespace json
 #error "conflicts!"
 #else
 #define DEFINE_KEYWORD(type, name, value) \
-    template<> const keyword_t<type> keyword_table_t<type>::name = value
+    template<> const Keyword<type> KeywordTable<type>::name = value
 
     DEFINE_KEYWORD(char, COLON , ':');
     DEFINE_KEYWORD(char, COMMA , ',');
@@ -379,7 +379,7 @@ namespace parser { namespace json
      * helper
      ***********************************************************************/
 
-    template<typename Char_T> inline Char_T chr_to_esc(Char_T);
+    template<typename CharType> inline CharType chr_to_esc(CharType);
 
     template<> inline char chr_to_esc(char ch)
     {
@@ -420,7 +420,7 @@ namespace parser { namespace json
      *  pair
      *      string : value
      */
-    template<typename In_T> inline bool parse_object(In_T & in);
+    template<typename InType> inline bool parse_object(InType & in);
 
     /*
      *  array
@@ -430,7 +430,7 @@ namespace parser { namespace json
      *      value
      *      value , elements
      */
-    template<typename In_T> inline bool parse_array(In_T & in);
+    template<typename InType> inline bool parse_array(InType & in);
 
     /*
      *  value
@@ -440,7 +440,7 @@ namespace parser { namespace json
      *      array
      *      keyword
      */
-    template<typename In_T> inline bool parse_value(In_T & in);
+    template<typename InType> inline bool parse_value(InType & in);
 
     /*
      *  keyword
@@ -448,7 +448,7 @@ namespace parser { namespace json
      *      false
      *      null
      */
-    template<typename In_T> inline bool parse_keyword(In_T & in);
+    template<typename InType> inline bool parse_keyword(InType & in);
 
     /*
      *  string
@@ -469,7 +469,7 @@ namespace parser { namespace json
      *      \t
      *      \u four-hex-digits
      */
-    template<typename In_T> inline bool parse_string(In_T & in);
+    template<typename InType> inline bool parse_string(InType & in);
 
     /*
      *  number
@@ -497,14 +497,14 @@ namespace parser { namespace json
      *      E+
      *      E-
      */
-    template<typename In_T> inline bool parse_number(In_T & in);
+    template<typename InType> inline bool parse_number(InType & in);
 
     /*
      *  cpp style comments
      *      / / any-character-except-newline-or-eof (newline | eof)
      *      / * any-character-except-*-and-/ * /
      */
-    template<typename In_T> inline bool skip_comments(In_T & in);
+    template<typename InType> inline bool skip_comments(InType & in);
 
     /************************************************************************
      * Implementation
@@ -512,10 +512,10 @@ namespace parser { namespace json
 
     /* note: each function must do `skip(chars::isspace)` at the end */
 
-    template<typename In_T> inline bool parse_object(In_T & in)
+    template<typename InType> inline bool parse_object(InType & in)
     {
-        typedef typename In_T::char_t char_t;
-        typedef keyword_table_t<char_t> kwd;
+        typedef typename InType::CharType CharType;
+        typedef KeywordTable<CharType> kwd;
 
         /* { */
         if (! match(in, kwd::MAP_BEG))
@@ -524,7 +524,7 @@ namespace parser { namespace json
         if (! skip_comments(in.skip(chars::isspace)))
             return false;
 
-        builder_t<char_t> & builder = in.get();
+        Builder<CharType> & builder = in.get();
         builder.map_beg();
 
         /* { } */
@@ -568,10 +568,10 @@ namespace parser { namespace json
         return true;
     }
 
-    template<typename In_T> inline bool parse_array(In_T & in)
+    template<typename InType> inline bool parse_array(InType & in)
     {
-        typedef typename In_T::char_t char_t;
-        typedef keyword_table_t<char_t> kwd;
+        typedef typename InType::CharType CharType;
+        typedef KeywordTable<CharType> kwd;
 
         /* [ */
         if (! match(in, kwd::SEQ_BEG))
@@ -580,7 +580,7 @@ namespace parser { namespace json
         if (! skip_comments(in.skip(chars::isspace)))
             return false;
 
-        builder_t<char_t> & builder = in.get();
+        Builder<CharType> & builder = in.get();
         builder.seq_beg();
 
         /* [ ] */
@@ -614,13 +614,13 @@ namespace parser { namespace json
         return true;
     }
 
-    template<typename In_T> inline bool parse_value(In_T & in)
+    template<typename InType> inline bool parse_value(InType & in)
     {
-        typedef typename In_T::char_t   char_t;
-        typedef keyword_table_t<char_t> kwd;
+        typedef typename InType::CharType   CharType;
+        typedef KeywordTable<CharType> kwd;
 
-        bool (* func)(In_T &) = NULL;
-        char_t ch = in.ch();
+        bool (* func)(InType &) = NULL;
+        CharType ch = in.ch();
         if (       ch == kwd::STR_BEG) {
             func = parse_string;
         } else if (ch == kwd::MAP_BEG) {
@@ -641,15 +641,15 @@ namespace parser { namespace json
         return skip_comments(in.skip(chars::isspace));
     }
 
-    template<typename In_T> inline bool parse_keyword(In_T & in)
+    template<typename InType> inline bool parse_keyword(InType & in)
     {
-        typedef typename In_T::char_t   char_t;
-        typedef keyword_table_t<char_t> kwd;
+        typedef typename InType::CharType   CharType;
+        typedef KeywordTable<CharType> kwd;
         using namespace ast;
 
         typename kwd::value_type const * keyword = NULL;
-        char_t                                ch = in.ch();
-        builder_t<char_t> &              builder = in.get();
+        CharType                                ch = in.ch();
+        Builder<CharType> &              builder = in.get();
 
         if (     ch == kwd::VAL_TRUE)
             keyword =& kwd::VAL_TRUE;
@@ -682,16 +682,16 @@ namespace parser { namespace json
         return true;
     }
 
-    template<typename In_T> inline bool parse_string(In_T & in)
+    template<typename InType> inline bool parse_string(InType & in)
     {
-        typedef typename In_T::char_t   char_t;
-        typedef keyword_table_t<char_t> kwd;
+        typedef typename InType::CharType   CharType;
+        typedef KeywordTable<CharType> kwd;
 
         /* " */
         if (! match(in, kwd::STR_BEG))
             return exception::expect(in, kwd::STR_BEG, "JSON string");
 
-        builder_t<char_t> & builder = in.get();
+        Builder<CharType> & builder = in.get();
         builder.str_beg();
 
         bool is_char = true;
@@ -700,7 +700,7 @@ namespace parser { namespace json
         do {
             if (in.ch() == kwd::ESCAPE) { /* escape */
                 in.skip();
-                char_t ch = chr_to_esc(in.ch());
+                CharType ch = chr_to_esc(in.ch());
                 if (ch != '\0') {
                     builder.on_chr(ch);
                 } else if (in.ch() == kwd::HEX) {
@@ -724,7 +724,7 @@ namespace parser { namespace json
             } else if (in.ch() == kwd::STR_END) {
                 is_char = false;
             } else { /* unescaped */
-                char_t ch = in.ch();
+                CharType ch = in.ch();
                 if (chars::iscntrl(ch))
                     return exception::expect(in, "CHAR", "JSON char");
                 builder.on_chr(ch);
@@ -739,13 +739,13 @@ namespace parser { namespace json
         return true;
     }
 
-    template<typename In_T> inline bool parse_number(In_T & in)
+    template<typename InType> inline bool parse_number(InType & in)
     {
-        typedef typename In_T::char_t char_t;
-        typedef keyword_table_t<char_t> kwd;
+        typedef typename InType::CharType CharType;
+        typedef KeywordTable<CharType> kwd;
         using namespace ast;
 
-        builder_t<char_t> & builder = in.get();
+        Builder<CharType> & builder = in.get();
 
         uint64_t    integral = 0,    integral_length = 0;
         uint64_t  fractional = 0,  fractional_length = 0;
@@ -859,9 +859,9 @@ namespace parser { namespace json
     }
 
     /* actually (comment*) */
-    template<typename In_T> bool skip_comments(In_T & in)
+    template<typename InType> bool skip_comments(InType & in)
     {
-        typedef keyword_table_t<typename In_T::char_t> kwd;
+        typedef KeywordTable<typename InType::CharType> kwd;
         if (in.ch() != kwd::COMMENT_FIRST)
             return true;
 
@@ -893,18 +893,18 @@ namespace parser { namespace json
 namespace parser { namespace json
 {
     extern bool parse(
-        stream_t         & stream,
-        tree_t<char>     & tree,
-        message_t        & message,
-        settings_t const & settings)
+        Stream         & stream,
+        Tree<char>     & tree,
+        Message        & message,
+        Settings const & settings)
     {
-        builder_t<char> builder(tree);
-        in_t in(stream, settings, builder);
+        Builder<char> builder(tree);
+        In in(stream, settings, builder);
 
         bool status = false;
         try {
             status = parse_value(in);
-        } catch (exception::parse_error const & e) {
+        } catch (exception::ParseError const & e) {
             message.push_back(e.what(), chars::strlen(e.what()));
         }
         return status;

@@ -8,7 +8,7 @@ CV_FS_PRIVATE_BEGIN
 
 namespace internal
 {
-    template<> const uint64_t fibonacci_t<uint64_t>::data[size] = {
+    template<> const uint64_t Fibonacci<uint64_t>::data[size] = {
         f< 0>::y, f< 1>::y, f< 2>::y, f< 3>::y, f< 4>::y, f< 5>::y, f< 6>::y,
         f< 7>::y, f< 8>::y, f< 9>::y, f<10>::y, f<11>::y, f<12>::y, f<13>::y,
         f<14>::y, f<15>::y, f<16>::y, f<17>::y, f<18>::y, f<19>::y, f<20>::y,
@@ -25,7 +25,7 @@ namespace internal
         f<91>::y, f<92>::y, f<93>::y
     };
 
-    template<> const uint32_t fibonacci_t<uint32_t>::data[size] = {
+    template<> const uint32_t Fibonacci<uint32_t>::data[size] = {
         f< 0>::y, f< 1>::y, f< 2>::y, f< 3>::y, f< 4>::y, f< 5>::y, f< 6>::y,
         f< 7>::y, f< 8>::y, f< 9>::y, f<10>::y, f<11>::y, f<12>::y, f<13>::y,
         f<14>::y, f<15>::y, f<16>::y, f<17>::y, f<18>::y, f<19>::y, f<20>::y,
@@ -35,14 +35,14 @@ namespace internal
         f<42>::y, f<43>::y, f<44>::y, f<45>::y, f<46>::y, f<47>::y
     };
 
-    template<> const uint16_t fibonacci_t<uint16_t>::data[size] = {
+    template<> const uint16_t Fibonacci<uint16_t>::data[size] = {
         f< 0>::y, f< 1>::y, f< 2>::y, f< 3>::y, f< 4>::y, f< 5>::y, f< 6>::y,
         f< 7>::y, f< 8>::y, f< 9>::y, f<10>::y, f<11>::y, f<12>::y, f<13>::y,
         f<14>::y, f<15>::y, f<16>::y, f<17>::y, f<18>::y, f<19>::y, f<20>::y,
         f<21>::y, f<22>::y, f<23>::y, f<24>::y
     };
 
-    template<> const uint8_t fibonacci_t<uint8_t>::data[size] = {
+    template<> const uint8_t Fibonacci<uint8_t>::data[size] = {
         f< 0>::y, f< 1>::y, f< 2>::y, f< 3>::y, f< 4>::y, f< 5>::y, f< 6>::y,
         f< 7>::y, f< 8>::y, f< 9>::y, f<10>::y, f<11>::y, f<12>::y, f<13>::y
     };

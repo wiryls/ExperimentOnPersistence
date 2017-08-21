@@ -21,7 +21,7 @@ namespace emitter
      * event type
      ***********************************************************************/
 
-    enum event_type
+    enum EventTag
     {
         OUT_INT,
         OUT_DBL,
@@ -36,22 +36,22 @@ namespace emitter
      * event data
      ***********************************************************************/
 
-    template<event_type EVENT> struct event_t
+    template<EventTag EVENT> struct Event
     {
         /* default: empty */
     };
 
-    template<> struct event_t<OUT_INT>
+    template<> struct Event<OUT_INT>
     {
         int64_t val;
     };
 
-    template<> struct event_t<OUT_DBL>
+    template<> struct Event<OUT_DBL>
     {
         double val;
     };
 
-    template<> struct event_t<OUT_STR>
+    template<> struct Event<OUT_STR>
     {
         char const * val;
         size_t       len;
@@ -68,7 +68,7 @@ namespace emitter
      * state type
      ***********************************************************************/
 
-    enum state_type
+    enum StateTag
     {
         NIL,
         VAL,
@@ -85,24 +85,24 @@ namespace emitter
 
 namespace emitter
 {
-    class handler_t
+    class Handler
     {
     public:
-        virtual inline ~handler_t() {};
+        virtual inline ~Handler() {};
 
     public:
-        virtual void change(state_type state) = 0;
-        virtual void push  (state_type state) = 0;
+        virtual void change(StateTag state) = 0;
+        virtual void push  (StateTag state) = 0;
         virtual void pop   () = 0;
 
         virtual void out(double  val                 ) = 0;
         virtual void out(int64_t val                 ) = 0;
         virtual void out(char const * val, size_t len) = 0;
 
-        virtual state_type top() const = 0;
+        virtual StateTag top() const = 0;
 
     public:
-        virtual void error(event_type event) const = 0;
+        virtual void error(EventTag event) const = 0;
     };
 }
 
@@ -116,8 +116,8 @@ namespace emitter
      * reject
      ***********************************************************************/
 
-    template<state_type STATE, event_type EVENT> inline
-    void transition(handler_t & handler, event_t<EVENT> const &)
+    template<StateTag STATE, EventTag EVENT> inline
+    void transition(Handler & handler, Event<EVENT> const &)
     {
         handler.error(EVENT);
     }
@@ -132,7 +132,7 @@ namespace emitter
 
     template<> inline void transition
     <VAL, OUT_INT>
-    (handler_t & handler, event_t<OUT_INT> const & event)
+    (Handler & handler, Event<OUT_INT> const & event)
     {
         handler.out(event.val);
         handler.pop();
@@ -140,7 +140,7 @@ namespace emitter
 
     template<> inline void transition
     <VAL, OUT_DBL>
-    (handler_t & handler, event_t<OUT_DBL> const & event)
+    (Handler & handler, Event<OUT_DBL> const & event)
     {
         handler.out(event.val);
         handler.pop();
@@ -148,7 +148,7 @@ namespace emitter
 
     template<> inline void transition
     <VAL, OUT_STR>
-    (handler_t & handler, event_t<OUT_STR> const & event)
+    (Handler & handler, Event<OUT_STR> const & event)
     {
         handler.out(event.val, event.len);
         handler.pop();
@@ -156,14 +156,14 @@ namespace emitter
 
     template<> inline void transition
     <VAL, BEG_SEQ>
-    (handler_t & handler, event_t<BEG_SEQ> const &)
+    (Handler & handler, Event<BEG_SEQ> const &)
     {
         handler.change(SEQ_VAL);
     }
 
     template<> inline void transition
     <VAL, BEG_MAP>
-    (handler_t & handler, event_t<BEG_MAP> const &)
+    (Handler & handler, Event<BEG_MAP> const &)
     {
         handler.change(MAP_KEY);
     }
@@ -174,42 +174,42 @@ namespace emitter
 
     template<> inline void transition
     <SEQ_VAL, OUT_INT>
-    (handler_t & handler, event_t<OUT_INT> const & event)
+    (Handler & handler, Event<OUT_INT> const & event)
     {
         handler.out(event.val);
     }
 
     template<> inline void transition
     <SEQ_VAL, OUT_DBL>
-    (handler_t & handler, event_t<OUT_DBL> const & event)
+    (Handler & handler, Event<OUT_DBL> const & event)
     {
         handler.out(event.val);
     }
 
     template<> inline void transition
     <SEQ_VAL, OUT_STR>
-    (handler_t & handler, event_t<OUT_STR> const & event)
+    (Handler & handler, Event<OUT_STR> const & event)
     {
         handler.out(event.val, event.len);
     }
 
     template<> inline void transition
     <SEQ_VAL, BEG_SEQ>
-    (handler_t & handler, event_t<BEG_SEQ> const &)
+    (Handler & handler, Event<BEG_SEQ> const &)
     {
         handler.push(SEQ_VAL);
     }
 
     template<> inline void transition
     <SEQ_VAL, BEG_MAP>
-    (handler_t & handler, event_t<BEG_MAP> const &)
+    (Handler & handler, Event<BEG_MAP> const &)
     {
         handler.push(MAP_KEY);
     }
 
     template<> inline void transition
     <SEQ_VAL, END_SEQ>
-    (handler_t & handler, event_t<END_SEQ> const &)
+    (Handler & handler, Event<END_SEQ> const &)
     {
         handler.pop();
     }
@@ -220,7 +220,7 @@ namespace emitter
 
     template<> inline void transition
     <MAP_KEY, OUT_STR>
-    (handler_t & handler, event_t<OUT_STR> const & event)
+    (Handler & handler, Event<OUT_STR> const & event)
     {
         handler.out(event.val, event.len);
         handler.change(MAP_VAL);
@@ -228,7 +228,7 @@ namespace emitter
 
     template<> inline void transition
     <MAP_KEY, END_MAP>
-    (handler_t & handler, event_t<END_MAP> const &)
+    (Handler & handler, Event<END_MAP> const &)
     {
         handler.pop();
     }
@@ -239,7 +239,7 @@ namespace emitter
 
     template<> inline void transition
     <MAP_VAL, OUT_INT>
-    (handler_t & handler, event_t<OUT_INT> const & event)
+    (Handler & handler, Event<OUT_INT> const & event)
     {
         handler.out(event.val);
         handler.change(MAP_KEY);
@@ -247,7 +247,7 @@ namespace emitter
 
     template<> inline void transition
     <MAP_VAL, OUT_DBL>
-    (handler_t & handler, event_t<OUT_DBL> const & event)
+    (Handler & handler, Event<OUT_DBL> const & event)
     {
         handler.out(event.val);
         handler.change(MAP_KEY);
@@ -255,7 +255,7 @@ namespace emitter
 
     template<> inline void transition
     <MAP_VAL, OUT_STR>
-    (handler_t & handler, event_t<OUT_STR> const & event)
+    (Handler & handler, Event<OUT_STR> const & event)
     {
         handler.out(event.val, event.len);
         handler.change(MAP_KEY);
@@ -263,7 +263,7 @@ namespace emitter
 
     template<> inline void transition
     <MAP_VAL, BEG_SEQ>
-    (handler_t & handler, event_t<BEG_SEQ> const &)
+    (Handler & handler, Event<BEG_SEQ> const &)
     {
         handler.change(MAP_KEY);
         handler.push  (SEQ_VAL);
@@ -271,7 +271,7 @@ namespace emitter
 
     template<> inline void transition
     <MAP_VAL, BEG_MAP>
-    (handler_t & handler, event_t<BEG_MAP> const &)
+    (Handler & handler, Event<BEG_MAP> const &)
     {
         handler.change(MAP_KEY);
         handler.push  (MAP_KEY);
@@ -281,9 +281,9 @@ namespace emitter
      * transition
      ***********************************************************************/
 
-    template<event_type EVENT> inline
-     handler_t & operator <<
-    (handler_t & handler, event_t<EVENT> const & event)
+    template<EventTag EVENT> inline
+     Handler & operator <<
+    (Handler & handler, Event<EVENT> const & event)
     {
         switch (handler.top())
         {
@@ -303,7 +303,7 @@ namespace emitter
 
 namespace io
 {
-    class stream_t;
+    class Stream;
 }
 
 namespace emitter
@@ -312,15 +312,15 @@ namespace emitter
      * state machine
      ***********************************************************************/
 
-    class json_fsm_t : public handler_t
+    class JsonFSM : public Handler
     {
     public:
-         json_fsm_t(io::stream_t * stream);
-        ~json_fsm_t();
+         JsonFSM(io::Stream * stream);
+        ~JsonFSM();
 
     public:
-        void change(state_type state);
-        void push  (state_type state);
+        void change(StateTag state);
+        void push  (StateTag state);
         void pop   ();
 
         void out(double  val);
@@ -328,20 +328,20 @@ namespace emitter
         void out(char const * val, size_t len);
 
     public:
-        state_type top() const;
-        void error(event_type event) const;
+        StateTag top() const;
+        void error(EventTag event) const;
 
     public:
         operator bool() const;
 
     public:
-        typedef chars::buffer_t<state_type, 128U, std::allocator> stack_t;
-        typedef chars::buffer_t<state_type, 128U, std::allocator> strbuf_t;
+        typedef chars::Buffer<StateTag, 128U, std::allocator> Stack;
+        typedef chars::Buffer<StateTag, 128U, std::allocator> Strbuf;
 
     private:
-        stack_t stack_;
-        io::stream_t * stream_;
-        bool    is_container_empty_;
+        Stack        stack_;
+        io::Stream * stream_;
+        bool         is_container_empty_;
     };
 }
 

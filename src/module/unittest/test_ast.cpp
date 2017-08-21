@@ -9,8 +9,8 @@ TEST(ast, number)
 {
     using namespace CV_FS_PRIVATE_NS::ast;
 
-    pool_t pool;
-    node_t<char> node;
+    Pool pool;
+    Node<char> node;
     node.construct(pool);
 
     {
@@ -31,8 +31,8 @@ TEST(ast, string)
 {
     using namespace CV_FS_PRIVATE_NS::ast;
 
-    pool_t pool;
-    node_t<char> node;
+    Pool pool;
+    Node<char> node;
     node.construct(pool);
 
     {   /* build short string */
@@ -77,9 +77,9 @@ TEST(ast, seq)
 {
     using namespace CV_FS_PRIVATE_NS::ast;
 
-    pool_t pool;
-    node_t<char> tmp;
-    node_t<char> node;
+    Pool pool;
+    Node<char> tmp;
+    Node<char> node;
     node.construct<SEQ>(pool);
 
     {   /* push back */
@@ -168,7 +168,7 @@ TEST(ast, seq)
         tmp.destruct(pool);
         EXPECT_EQ(node.at<SEQ>(0)->type(), NIL);
 
-        node_t<char> & child = *node.at<SEQ>(0);
+        Node<char> & child = *node.at<SEQ>(0);
 
         child.move(node, pool);
 
@@ -187,14 +187,14 @@ TEST(ast, map)
 {
     using namespace CV_FS_PRIVATE_NS::ast;
 
-    pool_t pool;
+    Pool pool;
     const char key[] = "key";
 
-    node_t<char> node;
+    Node<char> node;
     node.construct<MAP>(pool);
 
     {   /* move back */
-        node_t<char>::pair_t pair;
+        Node<char>::Pair pair;
         pair[0].construct<STR>(pool);
         pair[0].set<STR>(key, key + sizeof(key), pool);
         pair[1].construct<DBL>(pool);
@@ -207,7 +207,7 @@ TEST(ast, map)
     }
 
     {   /* push back */
-        node_t<char>::pair_t pair;
+        Node<char>::Pair pair;
         pair[0].construct<DBL>(pool);
         pair[0].set<DBL>(1.0, pool);
         pair[1].construct<STR>(pool);
@@ -223,11 +223,11 @@ TEST(ast, map)
     }
     {
         /* make key */
-        node_t<char> num;
+        Node<char> num;
         num.construct<DBL>(pool);
         num.set<DBL>(1.0, pool);
 
-        node_t<char> str;
+        Node<char> str;
         str.construct<STR>(pool);
         str.set<STR>(key, key + sizeof(key), pool);
 

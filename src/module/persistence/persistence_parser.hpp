@@ -18,10 +18,10 @@ CV_FS_PRIVATE_BEGIN
 
 namespace parser
 {
-    using io::stream_t;
-    using ast::tree_t;
+    using io::Stream;
+    using ast::Tree;
 
-    typedef chars::buffer_t<char, 128, std::allocator> message_t;
+    typedef chars::Buffer<char, 128, std::allocator> Message;
 }
 
 /****************************************************************************
@@ -30,9 +30,9 @@ namespace parser
 
 namespace parser
 {
-    struct settings_t
+    struct Settings
     {
-        settings_t()
+        Settings()
             : enable_json_comment(true)
             , enable_warning_message(true)
             , treate_warning_as_error(false)
@@ -49,11 +49,11 @@ namespace parser
         size_t indent_width;      /* '\t' == n' ' */
     };
 
-    typedef bool (*parse_funcion_t) (
-        stream_t         &,
-        tree_t<char>     &,
-        message_t        &,
-        settings_t const &
+    typedef bool (*ParseFuncion) (
+        Stream         &,
+        Tree<char>     &,
+        Message        &,
+        Settings const &
     );
 }
 
@@ -61,10 +61,10 @@ namespace parser { namespace xml
 {
     extern bool parse
     (
-        stream_t         & stream,
-        tree_t<char>     & result,
-        message_t        & message,
-        settings_t const & settings = settings_t()
+        Stream         & stream,
+        Tree<char>     & result,
+        Message        & message,
+        Settings const & settings = Settings()
     );
 }}
 
@@ -72,10 +72,10 @@ namespace parser { namespace yaml
 {
     extern bool parse
     (
-        stream_t         & stream,
-        tree_t<char>     & result,
-        message_t        & message,
-        settings_t const & settings = settings_t()
+        Stream         & stream,
+        Tree<char>     & result,
+        Message        & message,
+        Settings const & settings = Settings()
     );
 }}
 
@@ -83,10 +83,10 @@ namespace parser { namespace json
 {
     extern bool parse
     (
-        stream_t         & stream,
-        tree_t<char>     & result,
-        message_t        & message,
-        settings_t const & settings = settings_t()
+        Stream         & stream,
+        Tree<char>     & result,
+        Message        & message,
+        Settings const & settings = Settings()
     );
 }}
 

@@ -31,28 +31,28 @@ Design
 
 ### Overview
 
-An overview of underlying union `node_t`.
+An overview of underlying union `Node`.
 
 **Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L91-L467))
 
 ```C++
-template<typename char_t> union node_t
+template<typename CharType> union Node
 {
 public:
-    typedef node_t   pair_t[2];
+    typedef Node   Pair[2];
     /* ... some typedef ... */
 
 public:
-    template<typename pool_t> void construct(tag_t tag, pool_t & pool);
+    template<typename PoolType> void construct(Tag tag, Pool & pool);
     /* ... some methods and no ctors, dtor ... */
 
 private:
-    typename traits<node_t, NIL>::layout nil;
-    typename traits<node_t, I64>::layout i64;
-    typename traits<node_t, DBL>::layout dbl;
-    typename traits<node_t, STR>::layout str;
-    typename traits<node_t, SEQ>::layout seq;
-    typename traits<node_t, MAP>::layout map;
+    typename Traits<Node, NIL>::Layout nil;
+    typename Traits<Node, I64>::Layout i64;
+    typename Traits<Node, DBL>::Layout dbl;
+    typename Traits<Node, STR>::Layout str;
+    typename Traits<Node, SEQ>::Layout seq;
+    typename Traits<Node, MAP>::Layout map;
 };
 ```
 
@@ -60,32 +60,32 @@ The idea is simple:
 
  - **Lower memory cost**:
     - Use top level `union` and,
-    - Compress `capacity` to keep `sizeof(node_t<char_t>) == 16`. (SSE friendly!)
+    - Compress `capacity` to keep `sizeof(Node<CharType>) == 16`. (SSE friendly!)
  - **Lower coupling**:
     - Use generic programming to reduce code and bugs.
     - It's easy to add a new built-in type.
  - **Good compatibility**:
-    - Keep `node_t` trivial and standard layout.
-    - Reserve a template parameter `pool_t` for a memory pool.
+    - Keep `Node` trivial and standard layout.
+    - Reserve a template parameter `Pool` for a memory pool.
 
 ### Memory layout
 
 A common union-style AST node is like:
 
 ```C++
-struct node_t
+struct Node
 {
     int flag_;
-    union data_t {
+    union Data {
         double dbl_;
         /* ... */
     } data_;
 };
 ```
 
-Once we choose this solution, in x64, it is hard to keep the size of node smaller than 16 bytes. In `union data_t` part, a pointer will be 8 bytes, so containers such as `string` with pointer, size, and capacity will cost more than 16 bytes easily. `sizeof(node_t)` may be more than 24 bytes due to memory alignment.
+Once we choose this solution, in x64, it is hard to keep the size of node smaller than 16 bytes. In `union Data` part, a pointer will be 8 bytes, so containers such as `string` with pointer, size, and capacity will cost more than 16 bytes easily. `sizeof(Node)` may be more than 24 bytes due to memory alignment.
 
-So how to keep `sizeof(node) == 16`?
+So how to keep `sizeof(Node) == 16`?
 
 After reading relevant materials and learning from others, I come up with an interesting new idea:
  - Use a top level union and,
@@ -96,7 +96,7 @@ Let's take the sequence type as an example:
 **Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L960-L971))
 
 ```C++
-struct layout
+struct Layout
 {
     union
     {
@@ -108,7 +108,6 @@ struct layout
     uint8_t  pad[2];
     uint8_t  tag;                        /* node type */
 };
-
 ```
 
 **Memory Layout Digram**:
@@ -132,19 +131,19 @@ With the help of traits paradigm, life is easier.
 
 All built-in type is created in the following way:
 
-  1. Add its type name to `enum tag_t`.
-  2. Create `template<typename char_t> struct traits<node_t<char_t>, NEW_TAG_NAME>`.
-  3. Add its memory layout to `union node_t`.
-  4. Add new methods to `node_t` if necessary. 
+    1. Add its type name to `enum Tag`.
+    2. Create `template<typename CharType> struct Traits<Node<CharType>, NEW_TAG_NAME>`.
+    3. Add its memory layout to `union Node`.
+    4. Add new methods to `Node` if necessary. 
 
-Mostly, methods of `node_t` take the advantage of SFINAE. For example:
+Mostly, methods of `Node` take the advantage of SFINAE. For example:
 ```C++
-template<tag_t TAG> inline
-typename traits<node_t, TAG>::size_type
+template<Tag TAG> inline
+typename Traits<Node, TAG>::size_type
 capacity() const;
 ```
 
-We must firstly define `size_type` in `traits` to call method `capacity<TAG>()` with a specific TAG. Or we will get a compile-time error.
+We must firstly define `size_type` in `Traits` to call method `capacity<TAG>()` with a specific TAG. Or we will get a compile-time error.
 
 Details
 ---
@@ -156,12 +155,12 @@ As small strings appear in data exchange format quite often. It is worth to add 
 **Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L710-L737))
 
 ```C++
-union layout
+union Layout
 {
     /* small string */
     union
     {
-        char_t raw[14 / sizeof(char_t)];
+        CharType raw[14 / sizeof(CharType)];
         struct
         {
             uint8_t pad[14];
@@ -174,8 +173,8 @@ union layout
     {
         union
         {
-            char_t * ptr;
-            uint64_t pad;
+            CharType * ptr;
+            uint64_t   pad;
         }        raw;
         uint32_t siz;
         uint8_t  exp;
@@ -189,7 +188,7 @@ union layout
 
 ```
 +---------------------------------------------------------------+
-|                          char_t array                         |
+|                        CharType array                         |
 +---------------------------------------------------------------+
 |                                               | size  |  type |
 +---------------------------------------------------------------+
@@ -202,7 +201,7 @@ union layout
 +---------------------------------------------------------------+
 ```
 
-As mentioned above, `uint8_t tag` is fixed at the last byte of a node. The rest part is used to store necessary data of a string. If it is `node_t<char>` ( or`node_t<char16_t>`), all string less than 13 (or 6) characters will be stored as a small string. If not, `str.sht.ext.siz` will be set to 0xFF and it means NOT a small string.
+As mentioned above, `uint8_t tag` is fixed at the last byte of a node. The rest part is used to store necessary data of a string. If it is `Node<char>` ( or`Node<char16_t>`), all string less than 13 (or 6) characters will be stored as a small string. If not, `str.sht.ext.siz` will be set to 0xFF and it means NOT a small string.
 
 ### Growth Factor of Built-in Containers
 
@@ -214,23 +213,23 @@ Finally, I choose the Fibonacci series because of the ideal growth factor, golde
 
 [Three functions](src/module/persistence/persistence_fibonacci.hpp#L159-L202) (and [three template structs](src/module/persistence/persistence_fibonacci.hpp#L204-L232)) are provided for calculation:
 
- - `index_type left (value_type y)`, get the index of the left Fibonacci number of y.
- - `index_type right(value_type y)`, get the index of the right Fibonacci number of y.
- - `value_type at   (index_type x)`, get the x-th Fibonacci number.
+ - `IndexType left (ValueType y)`, get the index of the left Fibonacci number of y.
+ - `IndexType right(ValueType y)`, get the index of the right Fibonacci number of y.
+ - `ValueType at   (IndexType x)`, get the x-th Fibonacci number.
 
 We can customize it to control the growth factor of built-in containers.
 
 ### Memory Pool Requirement
 
-Most methods of `node_t` have a template parameter `pool_t` for a memory pool. It is not a good idea but still needed. With this template parameter, we can wrap up something like `CvMemStorage` to maintain compatibility.
+Most methods of `Node` have a template parameter `Pool` for a memory pool. It is not a good idea but still needed. With this template parameter, we can wrap up something like `CvMemStorage` to maintain compatibility.
 
 ```C++
-pool_t       pool;
-node_t<char> node;
+Pool       pool;
+Node<char> node;
 node.construct(pool);
 ```
 
-The `pool` must support allocate and deallocate `char_t` and `node_t<char_t>` type.
+The `pool` must support allocate and deallocate `CharType` and `Node<CharType>` type.
 
 There is a simple and specially [customized memory pool](src/module/persistence/persistence_pool.hpp#L126) in my source code for test. The memory pool is optimized according to the Fibonacci series and based on `std::allocator`.
 
@@ -277,14 +276,14 @@ About the simple and [customized memory pool](src/module/persistence/persistence
 Usage
 ---
 
-Here a simple example shows what `node_t` looks like.
+Here a simple example shows what `Node` looks like.
 ```C++
-pool_t       pool;
-node_t<char> node;
+Pool       pool;
+Node<char> node;
 node.construct(pool);
 const char str[] = "string";
 {   /* move back a pair */
-    node_t<char>::pair_t pair;
+    Node<char>::Pair pair;
     pair[0].construct(pool);
     pair[1].construct(pool);
     pair[0].set<DBL>(1.0, pool);
@@ -292,7 +291,7 @@ const char str[] = "string";
     node.move_back<MAP>(pair, pool);
 }
 {   /* search it */
-    node_t<char> key, val;
+    Node<char> key, val;
     key.construct(pool);
     val.construct(pool);
     key.set<DBL>(1.0, pool);
@@ -307,7 +306,7 @@ const char str[] = "string";
 node.destruct(pool);
 ```
 
-Obviously, the interface looks unfriendly. Because it is designed to be low-level and plain old data, there are no constructors, destructor, and operators. Because it needs compatibility for some stateful memory pool, there is always a template parameter for the pool. They make the interface quite unfriendly. Besides, if we only use some stateful allocators, we can remove the template parameter `pool_t`.
+Obviously, the interface looks unfriendly. Because it is designed to be low-level and plain old data, there are no constructors, destructor, and operators. Because it needs compatibility for some stateful memory pool, there is always a template parameter for the pool. They make the interface quite unfriendly. Besides, if we only use some stateful allocators, we can remove the template parameter `Pool`.
 
 Generally speaking, we may need a high-level interface to wrap it up. For example:
 
@@ -323,8 +322,8 @@ public:
     /* ...               */
 
 private:
-    node_t<char> * node_;
-    pool_t       * pool_;
+    Node<char> * node_;
+    Pool       * pool_;
 };
 ```
 
@@ -355,17 +354,17 @@ CvFileNode;
 **New**:
 
 ```C++
-template<typename char_t> union node_t
+template<typename CharType> union Node
 {
     /* ...... */
 
 private:
-    typename traits<node_t, NIL>::layout nil;
-    typename traits<node_t, I64>::layout i64;
-    typename traits<node_t, DBL>::layout dbl;
-    typename traits<node_t, STR>::layout str;
-    typename traits<node_t, SEQ>::layout seq;
-    typename traits<node_t, MAP>::layout map;
+    typename Traits<Node, NIL>::Layout nil;
+    typename Traits<Node, I64>::Layout i64;
+    typename Traits<Node, DBL>::Layout dbl;
+    typename Traits<Node, STR>::Layout str;
+    typename Traits<Node, SEQ>::Layout seq;
+    typename Traits<Node, MAP>::Layout map;
 };
 ```
 
@@ -373,7 +372,7 @@ private:
 
  - Remove member `struct CvTypeInfo* info`. Member `info` is used in RTTI but seems not used in most nodes. To minimize the size of nodes, I removed it. And an additional node is needed to record the type.
  - `Ordered Map` instead of `Hash Map`. As we all know, the main advantage of `ordered map` is it preserves order. So we can open a file and do some insertion or deletion but the order will not change.
- - Minimal pointer members. For example, it is `struct ...::layout seq` instead of `Seq * seq` in the union. Memory allocation is reduced here.
+ - Minimal pointer members. For example, it is `struct ...::Layout seq` instead of `Seq * seq` in the union. Memory allocation is reduced here.
  - Top level union. It shows above. Size of a node is always 16 bytes.
 
 Performance
@@ -407,18 +406,18 @@ Note:
 
 ### Result
 
-|   Node Type    |      Memory Pool       |  Condition  | Time(s) | Memory(MB) |
-| :------------: | :--------------------: | :---------: | ------: | ---------: |
-| `node_t<char>` | Customized Memory Pool |  Debug x86  |      90 |        431 |
-| `node_t<char>` |    `std::allocator`    |  Debug x86  |      92 |        525 |
-|  `CvFileNode`  |     `CvMemStorage`     |  Debug x86  |      45 |       1017 |
-| `node_t<char>` | Customized Memory Pool |  Debug x64  |      85 |        431 |
-| `node_t<char>` |    `std::allocator`    |  Debug x64  |      86 |        586 |
-| `node_t<char>` | Customized Memory Pool | Release x86 |    4.72 |        372 |
-| `node_t<char>` |    `std::allocator`    | Release x86 |    5.76 |        363 |
-|  `CvFileNode`  |     `CvMemStorage`     | Release x86 |    6.48 |       1011 |
-| `node_t<char>` | Customized Memory Pool | Release x64 |    4.05 |        372 |
-| `node_t<char>` |    `std::allocator`    | Release x64 |    4.96 |        393 |
+|  Node Type   |      Memory Pool       |  Condition  | Time(s) | Memory(MB) |
+| :----------: | :--------------------: | :---------: | ------: | ---------: |
+| `Node<char>` | Customized Memory Pool |  Debug x86  |      90 |        431 |
+| `Node<char>` |    `std::allocator`    |  Debug x86  |      92 |        525 |
+| `CvFileNode` |     `CvMemStorage`     |  Debug x86  |      45 |       1017 |
+| `Node<char>` | Customized Memory Pool |  Debug x64  |      85 |        431 |
+| `Node<char>` |    `std::allocator`    |  Debug x64  |      86 |        586 |
+| `Node<char>` | Customized Memory Pool | Release x86 |    4.72 |        372 |
+| `Node<char>` |    `std::allocator`    | Release x86 |    5.76 |        363 |
+| `CvFileNode` |     `CvMemStorage`     | Release x86 |    6.48 |       1011 |
+| `Node<char>` | Customized Memory Pool | Release x64 |    4.05 |        372 |
+| `Node<char>` |    `std::allocator`    | Release x64 |    4.96 |        393 |
 
 Note:
  - Time measure and memory footprint measure are provided by Visual Studio 2017.
@@ -429,7 +428,7 @@ Note:
 
 Reference
 ===
-  1. Modern C++ Design
-  2. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
-  3. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
-  4. [RapidJSON Documentation](http://rapidjson.org/)
+    1. Modern C++ Design
+    2. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
+    3. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
+    4. [RapidJSON Documentation](http://rapidjson.org/)
