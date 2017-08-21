@@ -93,7 +93,7 @@ After reading relevant materials and learning from others, I come up with an int
 
 Let's take the sequence type as an example:
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L960-L971))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L958-L969))
 
 ```C++
 struct Layout
@@ -428,7 +428,8 @@ Note:
 
 Reference
 ===
-    1. Modern C++ Design
-    2. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
-    3. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
-    4. [RapidJSON Documentation](http://rapidjson.org/)
+
+1. Modern C++ Design
+2. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
+3. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
+4. [RapidJSON Documentation](http://rapidjson.org/)
