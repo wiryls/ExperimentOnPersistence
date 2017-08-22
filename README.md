@@ -93,37 +93,37 @@ After reading relevant materials and learning from others, I come up with an int
 
 Let's take the sequence type as an example:
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L958-L969))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L956-L967))
 
 ```C++
 struct Layout
 {
+    uint8_t  tag;                        /* node type */
+    uint8_t  pad[2];
+    uint8_t  exp;                        /* index */
+    uint32_t siz;                        /* size */
     union
     {
-        typename container::pointer ptr; /* pointer to raw data */
+        typename Container::pointer ptr; /* pointer to raw data */
         uint64_t                    pad;
     }        raw;
-    uint32_t siz;                        /* size */
-    uint8_t  exp;                        /* index */
-    uint8_t  pad[2];
-    uint8_t  tag;                        /* node type */
 };
 ```
 
 **Memory Layout Digram**:
 ```
-+---------------------------------------------------------------+
++-------+---------------+-------+-------------------------------+
+|  tag  |               | index |              size             |
++-------+---------------+-------+-------------------------------+
 |                            pointer                            |
-+---------------------------------------------------------------+
-|               size            | index |               |  tag  |
 +---------------------------------------------------------------+
 ```
 
  - The pointer field is forced to be 8 bytes.
  - The size of a sequence is limited to 4 bytes. It costs 64 GB memory if full. It's enough in most cases.
  - The capacity of a sequence is compressed to be 1 byte. It only stores an index. The actual capacity is the n-th number in the Fibonacci series.
- - The tag is fixed at the last byte of all nodes whatever type. In this way, we can use `nil.tag` to access node tag.
- - We can make sure struct members won't rearrange. As it is standard layout.
+ - The tag is fixed at the first byte of all nodes whatever type. In this way, we can use `nil.tag` to access node tag because  tag is their **common initial sequence**.
+ - We can make sure struct members won't rearrange. As it is **standard layout**.
 
 ### Generic Programming
 
@@ -152,34 +152,33 @@ Details
 
 As small strings appear in data exchange format quite often. It is worth to add small string optimization. Also because the size of a node is fixed to 16 bytes, it is easier to optimize.
 
-**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L710-L737))
+**Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L710-L735))
 
 ```C++
 union Layout
 {
+    /* tag (in common initial sequence)  */
+    uint8_t tag;
+            
     /* small string */
-    union
+    struct
     {
+        uint8_t  pad;
+        uint8_t  siz;
         CharType raw[14 / sizeof(CharType)];
-        struct
-        {
-            uint8_t pad[14];
-            uint8_t siz;
-            uint8_t tag;
-        } ext;
     } sht;
+
     /* normal(long) string */
     struct
     {
+        uint8_t  pad[3];
+        uint8_t  exp;
+        uint32_t siz;
         union
         {
             CharType * ptr;
             uint64_t   pad;
         }        raw;
-        uint32_t siz;
-        uint8_t  exp;
-        uint8_t  pad[2];
-        uint8_t  tag;
     } lng;
 };
 ```
@@ -187,21 +186,21 @@ union Layout
 **Memory Layout Digram**:
 
 ```
-+---------------------------------------------------------------+
-|                        CharType array                         |
-+---------------------------------------------------------------+
-|                                               | size  |  type |
++-------+-------+-----------------------------------------------+
+|  tag  | size  |                                               |
++-------+-------+-----------------------------------------------+
+|                           char array                          |
 +---------------------------------------------------------------+
 ```
 ```
-+---------------------------------------------------------------+
++-------+---------------+-------+-------------------------------+
+|  tag  |               | index |              size             |
++-------+---------------+-------+-------------------------------+
 |                            pointer                            |
-+---------------------------------------------------------------+
-|               size            | index |               |  type |
 +---------------------------------------------------------------+
 ```
 
-As mentioned above, `uint8_t tag` is fixed at the last byte of a node. The rest part is used to store necessary data of a string. If it is `Node<char>` ( or`Node<char16_t>`), all string less than 13 (or 6) characters will be stored as a small string. If not, `str.sht.ext.siz` will be set to 0xFF and it means NOT a small string.
+As mentioned above, `uint8_t tag` is fixed at the first byte of a node. The rest part is used to store necessary data of a string. If it is `Node<char>` ( or`Node<char16_t>`), all string less than 13 (or 6) characters will be stored as a small string. If not, `str.sht.siz` will be set to 0xFF and it means NOT a small string.
 
 ### Growth Factor of Built-in Containers
 
@@ -402,7 +401,7 @@ From [test_io.cpp](src/module/unittest/test_io.cpp#L26-L27).
 ```
 
 Note:
- - The test file is `citylots.json` (189.9 MB, contains tens of millions of nodes). Please see references[3].
+ - The test file is `citylots.json` (189.9 MB, contains tens of millions of nodes). Please see references[4].
 
 ### Result
 
@@ -430,6 +429,7 @@ Reference
 ===
 
 1. Modern C++ Design
-2. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
-3. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
-4. [RapidJSON Documentation](http://rapidjson.org/)
+2. [Standard layout](http://en.cppreference.com/w/cpp/language/data_members#Standard_layout)
+3. [Optimal memory reallocation and the golden ratio](https://crntaylor.wordpress.com/2011/07/15/optimal-memory-reallocation-and-the-golden-ratio/)
+4. [City Lots San Francisco in .json](https://github.com/zeMirco/sf-city-lots-json)
+5. [RapidJSON Documentation](http://rapidjson.org/)

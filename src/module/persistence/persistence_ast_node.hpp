@@ -492,8 +492,8 @@ namespace ast
     public:
         struct Layout
         {
-            uint8_t pad[15];
             uint8_t tag;
+            uint8_t pad[15];
         };
 
     public:
@@ -545,9 +545,9 @@ namespace ast
     public:
         struct Layout
         {
-            int64_t val;
-            uint8_t pad[7];
             uint8_t tag;
+            uint8_t pad[7];
+            int64_t val;
         };
 
     public:
@@ -556,7 +556,7 @@ namespace ast
         void
         construct(Node & node, PoolType & /*pool*/)
         {
-            node.nil.tag = TAG;
+            node.i64.tag = TAG;
             val(node) = value_type();
         }
         template<typename PoolType>
@@ -564,7 +564,7 @@ namespace ast
         void
         destruct(Node & node, PoolType & /*pool*/)
         {
-            node.nil.tag = NIL;
+            node.i64.tag = NIL;
         }
         template<typename PoolType>
         static inline
@@ -572,7 +572,7 @@ namespace ast
         copy(Node & lhs, Node const & rhs, PoolType & /*pool*/)
         {
             val(lhs) = val(rhs);
-            lhs.nil.tag = TAG;
+            lhs.i64.tag = TAG;
         }
         static inline
         bool
@@ -614,9 +614,9 @@ namespace ast
     public:
         struct Layout
         {
-            double  val;
-            uint8_t pad[7];
             uint8_t tag;
+            uint8_t pad[7];
+            double  val;
         };
 
     public:
@@ -625,7 +625,7 @@ namespace ast
         void
         construct(Node & node, PoolType & /*pool*/)
         {
-            node.nil.tag = TAG;
+            node.dbl.tag = TAG;
             val(node) = value_type();
         }
         template<typename PoolType>
@@ -633,7 +633,7 @@ namespace ast
         void
         destruct(Node & node, PoolType & /*pool*/)
         {
-            node.nil.tag = NIL;
+            node.dbl.tag = NIL;
         }
         template<typename PoolType>
         static inline
@@ -641,7 +641,7 @@ namespace ast
         copy(Node & lhs, Node const & rhs, PoolType & /*pool*/)
         {
             val(lhs) = val(rhs);
-            lhs.nil.tag = TAG;
+            lhs.dbl.tag = TAG;
         }
         static inline
         bool
@@ -709,30 +709,28 @@ namespace ast
     public:
         union Layout
         {
+            /* tag (in common initial sequence)  */
+            uint8_t tag;
+            
             /* small string */
-            union
+            struct
             {
+                uint8_t  pad;
+                uint8_t  siz;
                 CharType raw[14 / sizeof(CharType)];
-                struct
-                {
-                    uint8_t pad[14];
-                    uint8_t siz;
-                    uint8_t tag;
-                } ext;
             } sht;
 
             /* normal(long) string */
             struct
             {
+                uint8_t  pad[3];
+                uint8_t  exp;
+                uint32_t siz;
                 union
                 {
                     CharType * ptr;
                     uint64_t   pad;
                 }        raw;
-                uint32_t siz;
-                uint8_t  exp;
-                uint8_t  pad[2];
-                uint8_t  tag;
             } lng;
         };
 
@@ -744,16 +742,16 @@ namespace ast
         bool
         is_smallstring(Node const & node)
         {
-            return node.str.sht.ext.siz != LONG;
+            return node.str.sht.siz != LONG;
         }
         static inline
         void
         update(Node & node, size_type siz)
         {
             if (is_smallstring(node))
-                node.str.sht.ext.siz = static_cast<uint8_t>(siz);
+                node.str.sht.siz = static_cast<uint8_t>(siz);
             else
-                node.str.lng    .siz = siz;
+                node.str.lng.siz = siz;
         }
 
     public:
@@ -762,10 +760,10 @@ namespace ast
         void
         construct(Node & node, PoolType & /*pool*/)
         {
-            node.nil.tag = TAG;
+            node.str.tag = TAG;
             /* '\0' at end */
             node.str.sht.raw [0] = CharType();
-            node.str.sht.ext.siz = 1;
+            node.str.sht.siz = 1;
         }
         template<typename PoolType>
         static inline
@@ -778,7 +776,7 @@ namespace ast
                 size_type cap = capacity(node) + size_type(1);
                 pool.deallocate(mem, cap);
             }
-            node.nil.tag = NIL;
+            node.str.tag = NIL;
         }
         template<typename PoolType>
         static inline
@@ -796,7 +794,7 @@ namespace ast
             }
             {   /* update */
                 update(lhs, siz);
-                lhs.nil.tag = TAG;
+                lhs.str.tag = TAG;
             }
         }
         static inline
@@ -816,7 +814,7 @@ namespace ast
         {
             return static_cast<size_type>
                 ( is_smallstring(node)
-                ? node.str.sht.ext.siz
+                ? node.str.sht.siz
                 : node.str.lng.siz
                 )
                 -
@@ -881,7 +879,7 @@ namespace ast
                 pool.deallocate(old, capacity(node) + size_type(1));
 
             /* update */
-            node.str.sht.ext.siz = LONG;
+            node.str.sht.siz = LONG;
             node.str.lng.siz     = siz;
             node.str.lng.exp     = exp;
             node.str.lng.raw.ptr = mem;
@@ -957,15 +955,15 @@ namespace ast
     public:
         struct Layout
         {
+            uint8_t  tag;
+            uint8_t  pad[2];
+            uint8_t  exp;
+            uint32_t siz;
             union
             {
                 typename Container::pointer ptr;
                 uint64_t                    pad;
             }        raw;
-            uint32_t siz;
-            uint8_t  exp;
-            uint8_t  pad[2];
-            uint8_t  tag;
         };
 
     public:
@@ -977,7 +975,7 @@ namespace ast
             node.seq.raw.ptr = NULL;
             node.seq.siz = 0;
             node.seq.exp = 0;
-            node.nil.tag = TAG;
+            node.seq.tag = TAG;
         }
         template<typename PoolType>
         static inline
@@ -994,7 +992,7 @@ namespace ast
             if (beg != NULL)
                 pool.deallocate(beg, capacity(node));
 
-            node.nil.tag = NIL;
+            node.seq.tag = NIL;
         }
         template<typename PoolType>
         static inline
@@ -1177,15 +1175,15 @@ namespace ast
     public:
         struct Layout
         {
+            uint8_t  tag;
+            uint8_t  pad[2];
+            uint8_t  exp;
+            uint32_t siz;
             union
             {
                 typename Container::pointer ptr;
                 uint64_t                    pad;
             }        raw;
-            uint32_t siz;
-            uint8_t  exp;
-            uint8_t  pad[2];
-            uint8_t  tag;
         };
 
     public:
@@ -1197,7 +1195,7 @@ namespace ast
             node.map.raw.ptr = NULL;
             node.map.siz = 0;
             node.map.exp = 0;
-            node.nil.tag = TAG;
+            node.map.tag = TAG;
         }
         template<typename PoolType>
         static inline
@@ -1219,7 +1217,7 @@ namespace ast
                 pool.deallocate(mem, siz);
             }
 
-            node.nil.tag = NIL;
+            node.map.tag = NIL;
         }
         template<typename PoolType>
         static inline
@@ -1525,6 +1523,7 @@ namespace ast
     inline Tag Node<CharType>::
     type() const
     {
+        /* tag is their common initial sequence */
         return static_cast<Tag>(nil.tag);
     }
 

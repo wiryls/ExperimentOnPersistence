@@ -2,8 +2,35 @@
  *  license
  ***************************************************************************/
 
+#include <type_traits>
 #include <gtest/gtest.h>
 #include "../persistence/persistence_ast.hpp"
+
+TEST(ast, basic)
+{
+    using namespace CV_FS_PRIVATE_NS::ast;
+
+    EXPECT_EQ(std::is_standard_layout< Node<char    > >::value, true);
+    EXPECT_EQ(std::is_trivial< Node<char    > >::value, true);
+    EXPECT_EQ(sizeof(Node<char    >), 16);
+
+    union CommonInitialSequence
+    {
+        Traits<Node<char>, NIL>::Layout nil;
+        Traits<Node<char>, I64>::Layout i64;
+        Traits<Node<char>, DBL>::Layout dbl;
+        Traits<Node<char>, STR>::Layout str;
+        Traits<Node<char>, SEQ>::Layout seq;
+        Traits<Node<char>, MAP>::Layout map;
+    } ls;
+    ls.nil.tag = SEQ;
+    EXPECT_EQ(ls.nil.tag, SEQ);
+    EXPECT_EQ(ls.i64.tag, SEQ);
+    EXPECT_EQ(ls.dbl.tag, SEQ);
+    EXPECT_EQ(ls.str.tag, SEQ);
+    EXPECT_EQ(ls.seq.tag, SEQ);
+    EXPECT_EQ(ls.map.tag, SEQ);
+}
 
 TEST(ast, number)
 {
@@ -22,6 +49,11 @@ TEST(ast, number)
         int64_t number = 0x123456789ABCDEF;
         node.set<I64>(number, pool);
         EXPECT_EQ(node.val<I64>(), number);
+    }
+    {
+        double number = 1e100;
+        node.set<DBL>(number, pool);
+        EXPECT_EQ(node.val<DBL>(), number);
     }
 
     node.destruct(pool);
@@ -65,7 +97,7 @@ TEST(ast, string)
         EXPECT_EQ(ptr, node.end<STR>());
     }
     {   /* build normal string */
-        const char s31[] = "this is not a short test string";
+        const char s31[] = "this is not a small test string";
         node.set<STR>(s31, s31 + 31, pool);
         EXPECT_EQ(::memcmp(node.raw<STR>(), s31, 32), 0);
     }

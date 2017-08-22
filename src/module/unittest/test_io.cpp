@@ -23,8 +23,8 @@ TEST(io, input_bigfile)
 {
     using namespace experimental;
 
-    //FileStorage fs("citylots.json", FileStorage::READ);
-    //fs.release();
+    FileStorage fs("citylots.json", FileStorage::READ);
+    fs.release();
 }
 
 TEST(io, output)
