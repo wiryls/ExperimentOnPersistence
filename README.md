@@ -56,17 +56,19 @@ private:
 };
 ```
 
-The idea is simple:
+My goal is simple:
 
  - **Lower memory cost**:
     - Use top level `union` and,
-    - Compress `capacity` to keep `sizeof(Node<CharType>) == 16`. (SSE friendly!)
+    - Compress `capacity` to keep `sizeof(Node<CharType>) == 16`. (**SSE friendly**!)
  - **Lower coupling**:
     - Use generic programming to reduce code and bugs.
-    - It's easy to add a new built-in type.
+    - It's not hard to add a new built-in type.
  - **Good compatibility**:
     - Keep `Node` trivial and standard layout.
     - Reserve a template parameter `Pool` for a memory pool.
+
+I will introduce them in detail.
 
 ### Memory layout
 
@@ -83,15 +85,15 @@ struct Node
 };
 ```
 
-Once we choose this solution, in x64, it is hard to keep the size of node smaller than 16 bytes. In `union Data` part, a pointer will be 8 bytes, so containers such as `string` with pointer, size, and capacity will cost more than 16 bytes easily. `sizeof(Node)` may be more than 24 bytes due to memory alignment.
+Once we choose this solution, in x64 architecture, it is hard to keep the size of node less than 16 bytes. For example, i0n `union Data`, a pointer will be 8 bytes, so containers such as `string` with a pointer, size, and capacity will cost more than 16 bytes easily. `sizeof(Node)` may be more than 24 bytes due to memory alignment.
 
 So how to keep `sizeof(Node) == 16`?
 
-After reading relevant materials and learning from others, I come up with an interesting new idea:
+I come up with an interesting new idea:
  - Use a top level union and,
  - Compress "capacity".
 
-Let's take the sequence type as an example:
+Let's take the built-in type, sequence, as an example:
 
 **Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L956-L967))
 
@@ -119,11 +121,13 @@ struct Layout
 +---------------------------------------------------------------+
 ```
 
- - The pointer field is forced to be 8 bytes.
- - The size of a sequence is limited to 4 bytes. It costs 64 GB memory if full. It's enough in most cases.
- - The capacity of a sequence is compressed to be 1 byte. It only stores an index. The actual capacity is the n-th number in the Fibonacci series.
- - The tag is fixed at the first byte of all nodes whatever type. In this way, we can use `nil.tag` to access node tag because  tag is their **common initial sequence**.
  - We can make sure struct members won't rearrange. As it is **standard layout**.
+ - The `tag` is fixed at the first byte of all nodes whatever type. In this way, we can use `nil.tag` to access node tag because  `tag` is in their **common initial sequence**.
+ - The capacity of a sequence is compressed to be 1 byte. It only stores an `index`. The actual capacity is the n-th number in **the Fibonacci series**.
+ - The size of a sequence is limited to 4 bytes. It will cost 64 GB memory when full. So it's enough in most cases.
+ - The pointer field is forced to be 8 bytes.
+
+In this way, we can keep size of `Node` always 16 bytes.
 
 ### Generic Programming
 
@@ -136,7 +140,7 @@ All built-in type is created in the following way:
     3. Add its memory layout to `union Node`.
     4. Add new methods to `Node` if necessary. 
 
-Mostly, methods of `Node` take the advantage of SFINAE. For example:
+Moreover, methods of `Node` take the advantage of SFINAE. For example:
 ```C++
 template<Tag TAG> inline
 typename Traits<Node, TAG>::size_type
@@ -150,7 +154,7 @@ Details
 
 ### Small String Optimization
 
-As small strings appear in data exchange format quite often. It is worth to add small string optimization. Also because the size of a node is fixed to 16 bytes, it is easier to optimize.
+As small strings appear in data exchange format quite often. It is worth to add small string optimization. And because the size of a node is fixed to 16 bytes, it is easier to optimize.
 
 **Source Code Snippet** (from [persistence_ast_node.hpp](src/module/persistence/persistence_ast_node.hpp#L710-L735))
 
@@ -204,7 +208,7 @@ As mentioned above, `uint8_t tag` is fixed at the first byte of a node. The rest
 
 ### Growth Factor of Built-in Containers
 
-In this design, the capacity of a built-in container is limited to some fixed number. And only the index of a number in series is stored. So it is necessary to pre-compute the series and provide some methods to look up.
+The capacity of a built-in container is limited to some fixed number. And only the index of a number in series is stored. So it is necessary to pre-compute the series and provide some methods to look up.
 
 In my initial design, the growth factor of a container such as string was 2. I found it wastes about 0.25n memory if there are n nodes, compared to some normal designs with a growth factor 1.5.
 
@@ -216,11 +220,11 @@ Finally, I choose the Fibonacci series because of the ideal growth factor, golde
  - `IndexType right(ValueType y)`, get the index of the right Fibonacci number of y.
  - `ValueType at   (IndexType x)`, get the x-th Fibonacci number.
 
-We can customize it to control the growth factor of built-in containers.
+We can customize it to control the growth factor of all built-in containers.
 
 ### Memory Pool Requirement
 
-Most methods of `Node` have a template parameter `Pool` for a memory pool. It is not a good idea but still needed. With this template parameter, we can wrap up something like `CvMemStorage` to maintain compatibility.
+There is no space for storing an allocator inside `Node`, so most methods of `Node` have an additional template parameter `Pool` for a memory pool. It is not a good idea but still needed. With this template parameter, we can wrap up something like `CvMemStorage` to maintain compatibility.
 
 ```C++
 Pool       pool;
@@ -326,7 +330,22 @@ private:
 };
 ```
 
-And then the interface will be friendly via function overloading.
+or:
+
+```c++
+class FileNode : Node
+{
+public:
+    /* ...               */
+    /* constructor       */
+    /* destructor        */
+    /* operator overload */
+    /* other methods     */
+    /* ...               */
+};
+```
+
+And in this way the interface will be more friendly.
 
 Comparison
 ---
@@ -369,7 +388,7 @@ private:
 
 **The differences**:
 
- - Remove member `struct CvTypeInfo* info`. Member `info` is used in RTTI but seems not used in most nodes. To minimize the size of nodes, I removed it. And an additional node is needed to record the type.
+ - Remove member `struct CvTypeInfo* info`. Member `info` is used in RTTI but seems not used in most nodes. To minimize the size of nodes, I removed it. Therefore, an additional node is needed to record the type.
  - `Ordered Map` instead of `Hash Map`. As we all know, the main advantage of `ordered map` is it preserves order. So we can open a file and do some insertion or deletion but the order will not change.
  - Minimal pointer members. For example, it is `struct ...::Layout seq` instead of `Seq * seq` in the union. Memory allocation is reduced here.
  - Top level union. It shows above. Size of a node is always 16 bytes.
@@ -424,6 +443,7 @@ Note:
  - `null` has been replaced with 0.
  - Customized Memory Pool is mentioned above and based on `std::allocator`.
  - About `CvFileNode`, OpenCV version is 3.3.
+ - Guess if the test data is only a few big matrix, the difference may not be so much.
 
 Reference
 ===
